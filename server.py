@@ -16,17 +16,21 @@ def clients_list():
 def on_new_client(server_input, addr):
     # print("Connected clients:", clients)
     while True:
-        response = server_input.recv(1024)
-        response = response.decode()
-        if response == "exit":
-            print(f'{addr} DISCONNECTED')
-            clients.remove((server_input, addr))
+        try:
+            response = server_input.recv(1024)
+            response = response.decode()
+            if response == "exit":
+                print(f'{addr} DISCONNECTED')
+                clients.remove((server_input, addr))
 
-            clients_list()
+                clients_list()
 
-            # print("Connected clients:", clients)
+                # print("Connected clients:", clients)
+                break
+            print(f'{addr} => {response}')
+        except ConnectionResetError:
+            print(f'{addr} SUDDENLY DISCONNECTED')
             break
-        print(f'{addr} => {response}')
     server_input.close()
     return
 

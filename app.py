@@ -29,18 +29,27 @@ class Application(tk.Frame):
         self.quit = tk.Button(self, text="QUIT", fg="red",
                               command=self.close_and_quit)
         self.quit.pack(side="bottom")
-        self.clients_list = tk.tix.Listbox(listvariable=clients)
+
+        self.clients_list = tk.tix.Listbox()
+
+        self.button_list_selected = tk.Button(self, text="PRINT SELECTED", command=self.list_selected)
+        self.button_list_selected.pack(side="right")
 
     def client_list(self):
         print("antes de criar a listbox", clients)
         self.clients_list.destroy()
-        self.clients_list = tk.tix.Listbox(listvariable=clients)
+        self.clients_list = tk.tix.Listbox(selectmode=tk.MULTIPLE)
 
         for index, client in enumerate(clients):
             self.clients_list.insert(index, client)
 
         self.clients_list.update()
         self.clients_list.pack(side="left")
+
+    def list_selected(self):
+        items = map(int, self.clients_list.curselection())
+        for x in items:
+            print(x)
 
     def say_hi(self):
         print("hi there, everyone!")
@@ -52,24 +61,30 @@ class Application(tk.Frame):
         self.master.destroy()
 
 
-
 root = tk.Tk()
 root.geometry("800x500")
 # root.resizable(0,0)
 app = Application(master=root)
 
+
 ############################################################
+# VAMOS TER Q MUDAR ISSO POIS OS CLIENTES VAO TER Q RECEBER COISAS ALEM DA LISTA DE CLIENTES
+# PROVAVELMENTE VAMOS TER QUE ENVIAR UMA LABEL INICIAL PARA DIFERENCIAR CADA TIPO DE MENSAGEM
+# SE FOR A LISTA DE CLIENTES COMEÇA COM client_list, SE FOR ARQUIVO PARA SER RECEBIDO VAI SER new_file
+# E ASSIM POR DIANTE
 def clients_list():
     global clients
     while True:
-        clients = pickle.loads(client_socket.recv(1024))
-        print(clients)
+        try:
+            clients = pickle.loads(client_socket.recv(1024))
+        except ConnectionAbortedError:
+            client_socket.close()
+            return
 
         app.client_list()
+
 
 _thread.start_new_thread(clients_list, ())
 ############################################################
 
 root.mainloop()
-
-client_socket.close()
