@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import tix
 import socket
 import pickle
+from tkinter.filedialog import askopenfilename
 
 address = ("localhost", 20000)
 
@@ -11,6 +12,20 @@ client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect(address)
 
 clients = []
+
+
+def OpenFile():
+    name = askopenfilename(initialdir="C:/Users/Batman/Documents/Programming/tkinter/",
+                           filetypes =(("Text File", "*.txt"),("All Files","*.*")),
+                           title = "Choose a file."
+                           )
+    print (name)
+    #Using try in case user types in unknown file or closes without choosing a file.
+    try:
+        with open(name,'r') as UseFile:
+            print(UseFile.read())
+    except:
+        print("No file exists")
 
 class Application(tk.Frame):
     def __init__(self, master=None):
@@ -34,6 +49,8 @@ class Application(tk.Frame):
 
         self.button_list_selected = tk.Button(self, text="PRINT SELECTED", command=self.list_selected)
         self.button_list_selected.pack(side="right")
+
+        self.button_select_file = tk.Button(self, text="Select file", command=OpenFile).pack(side="bottom")
 
     def client_list(self):
         print("antes de criar a listbox", clients)
@@ -65,6 +82,8 @@ root = tk.Tk()
 root.geometry("800x500")
 # root.resizable(0,0)
 app = Application(master=root)
+
+
 
 
 ############################################################

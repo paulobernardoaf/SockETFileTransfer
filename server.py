@@ -10,6 +10,7 @@ def clients_list():
     for client in clients:
         list.append(client[1])
 
+    print(clients)
     for client in clients:
         client[0].sendto(pickle.dumps(list), client[1])
 
@@ -29,6 +30,7 @@ def on_new_client(server_input, addr):
                 break
             print(f'{addr} => {response}')
         except ConnectionResetError:
+            clients.remove((server_input, addr))
             print(f'{addr} SUDDENLY DISCONNECTED')
             break
     server_input.close()
