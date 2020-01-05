@@ -26,7 +26,6 @@ def on_new_client(server_input, addr):
 
                 clients_list()
 
-                # print("Connected clients:", clients)
                 break
             print(f'{addr} => {response}')
         except ConnectionResetError:

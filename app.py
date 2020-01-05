@@ -1,9 +1,13 @@
 import _thread
-import tkinter as tk
-from tkinter import tix
-import socket
 import pickle
-from tkinter.filedialog import askopenfilename
+import socket
+
+from kivy.app import App
+from kivy.core.window import Window
+from kivy.lang import Builder
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
+from kivy.uix.recycleview import RecycleView
 
 address = ("localhost", 20000)
 
@@ -14,76 +18,52 @@ client_socket.connect(address)
 clients = []
 
 
-def OpenFile():
-    name = askopenfilename(initialdir="C:/Users/Batman/Documents/Programming/tkinter/",
-                           filetypes =(("Text File", "*.txt"),("All Files","*.*")),
-                           title = "Choose a file."
-                           )
-    print (name)
-    #Using try in case user types in unknown file or closes without choosing a file.
-    try:
-        with open(name,'r') as UseFile:
-            print(UseFile.read())
-    except:
-        print("No file exists")
+Builder.load_string('''
+<ClientsRecycleView>:
+    viewclass: 'Label'
+    RecycleBoxLayout:
+        default_size: None, dp(56)
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: 'vertical'
+''')
 
-class Application(tk.Frame):
-    def __init__(self, master=None):
-        super().__init__(master)
-        self.master = master
-        self.pack()
-        self.create_widgets()
-        self.client_list()
 
-    def create_widgets(self):
-        self.hi_there = tk.Button(self)
-        self.hi_there["text"] = "Hello World\n(click me)"
-        self.hi_there["command"] = self.say_hi
-        self.hi_there.pack(side="top")
+class ClientsRecycleView(RecycleView):
+    global clients
 
-        self.quit = tk.Button(self, text="QUIT", fg="red",
-                              command=self.close_and_quit)
-        self.quit.pack(side="bottom")
-
-        self.clients_list = tk.tix.Listbox()
-
-        self.button_list_selected = tk.Button(self, text="PRINT SELECTED", command=self.list_selected)
-        self.button_list_selected.pack(side="right")
-
-        self.button_select_file = tk.Button(self, text="Select file", command=OpenFile).pack(side="bottom")
-
-    def client_list(self):
+    def build_client_list(self):
         print("antes de criar a listbox", clients)
-        self.clients_list.destroy()
-        self.clients_list = tk.tix.Listbox(selectmode=tk.MULTIPLE)
+        self.data = [{'text': str(x[0]) + ':' + str(x[1])} for x in clients]
+        self.refresh_from_data()
+        print(self.data)
 
-        for index, client in enumerate(clients):
-            self.clients_list.insert(index, client)
 
-        self.clients_list.update()
-        self.clients_list.pack(side="left")
+class Application(App):
 
-    def list_selected(self):
-        items = map(int, self.clients_list.curselection())
-        for x in items:
-            print(x)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.clients_list = ClientsRecycleView()
 
-    def say_hi(self):
-        print("hi there, everyone!")
+    def build(self):
+        self.box = BoxLayout(orientation='horizontal', spacing=20)
+        self.quit_button = Button(text="Quit", on_press=self.close_and_quit, size_hint=(.1, .1))
+        self.box.add_widget(self.quit_button)
+        self.box.add_widget(self.clients_list)
+        return self.box
 
-    def close_and_quit(self):
+    def close_and_quit(self, obj):
         print("exiting...")
         client_socket.send(b"exit")
         client_socket.close()
-        self.master.destroy()
+        App.get_running_app().stop()
+        Window.close()
 
 
-root = tk.Tk()
-root.geometry("800x500")
-# root.resizable(0,0)
-app = Application(master=root)
 
 
+app = Application()
 
 
 ############################################################
@@ -100,10 +80,11 @@ def clients_list():
             client_socket.close()
             return
 
-        app.client_list()
+        app.clients_list.build_client_list()
 
 
 _thread.start_new_thread(clients_list, ())
-############################################################
+###################a#########################################
 
-root.mainloop()
+
+app.run()
