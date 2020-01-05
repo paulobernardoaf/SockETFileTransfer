@@ -1,0 +1,64 @@
+<SelectableLabel>:
+    # Draw a background to indicate selection
+    canvas.before:
+        Color:
+            rgba: (.0, 0.9, .1, .3) if self.selected else (0, 0, 0, 1)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+        Color:
+            rgba: (255, 0, 255, 1)
+        Line:
+            width: 2
+            rectangle: self.x, self.y, self.width, self.height
+<ClientsRecycleView>:
+    viewclass: 'SelectableLabel'
+    SelectableRecycleBoxLayout:
+        default_size: None, dp(56)
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: 'vertical'
+        multiselect: True
+        touch_multiselect: True
+<Filechooser>:
+
+    label: label
+
+    # Providing the orentation
+    orientation: 'vertical'
+
+    # Creating the File list / icon view
+
+    BoxLayout:
+
+        # Creating list view one side
+        FileChooserListView:
+            canvas.before:
+                Color:
+                    rgb: .4, .5, .5
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            on_selection: root.select(*args)
+
+        # Creating Icon view other side
+        FileChooserIconView:
+            canvas.before:
+                Color:
+                    rgb: .5, .4, .5
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            on_selection: root.select(*args)
+
+    # Adding label
+    Label:
+        id: label
+        size_hint_y: .1
+        canvas.before:
+            Color:
+                rgb: .5, .5, .4
+            Rectangle:
+                pos: self.pos
+                size: self.size
