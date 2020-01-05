@@ -23,14 +23,12 @@ def on_new_client(server_input, addr):
             if response == "exit":
                 print(f'{addr} DISCONNECTED')
                 clients.remove((server_input, addr))
-
-                clients_list()
-
-                break
             print(f'{addr} => {response}')
         except ConnectionResetError:
             clients.remove((server_input, addr))
             print(f'{addr} SUDDENLY DISCONNECTED')
+        finally:
+            clients_list()
             break
     server_input.close()
     return
