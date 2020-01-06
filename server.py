@@ -2,6 +2,7 @@
 import socket
 import _thread
 import pickle
+import time
 
 clients = []
 
@@ -16,13 +17,23 @@ def clients_list():
 
 def on_new_client(server_input, addr):
     # print("Connected clients:", clients)
+    info_bin = b''
+    st = time.time()
     while True:
         try:
-            response = server_input.recv(1024)
-            response = response.decode()
+            response = server_input.recv(2048)
+            # response = pickle.loads(response)
+            if not response:
+                print("NULL RESPONSE")
+                break
+            print("resp:", response)
             if response == "exit":
                 print(f'{addr} DISCONNECTED')
                 clients.remove((server_input, addr))
+            info_bin += response
+            if time.time() - st >= 2:  # opcional, informacao sobre o total ja carregado
+                print('bytes downloaded:', len(info_bin))
+                st = time.time()
             print(f'{addr} => {response}')
         except ConnectionResetError:
             clients.remove((server_input, addr))
@@ -30,6 +41,14 @@ def on_new_client(server_input, addr):
         finally:
             clients_list()
             break
+    print(info_bin)
+    info = pickle.loads(info_bin)
+    print("INFO: ", info)
+    if info['file']:
+        dest = '{}'.format(info['name'])
+        with open(dest, 'wb') as f:
+            f.write(info['file'])
+        print('success on receiving and saving {} for {}'.format(info['name'], server_input.getpeername()))
     server_input.close()
     return
 

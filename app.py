@@ -1,4 +1,5 @@
 import _thread
+import os
 import pickle
 import socket
 from subprocess import Popen, PIPE
@@ -62,6 +63,11 @@ class Application(App):
 
         self.file_path = filedialog.askopenfilename()
         print(self.file_path)
+        self.selected_file = open(self.file_path, 'rb').read()
+        self.file_name = os.path.basename(os.path.normpath(self.file_path))
+        info = {'name': self.file_name, 'file': self.selected_file, 'opcao': 'file'}
+        print(info)
+        client_socket.sendall(pickle.dumps(info))
 
 
 
