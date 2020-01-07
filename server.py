@@ -6,6 +6,7 @@ import time
 
 clients = []
 
+
 def clients_list():
     list = []
     for client in clients:
@@ -15,10 +16,47 @@ def clients_list():
     for client in clients:
         client[0].sendto(pickle.dumps(list), client[1])
 
+
+def percentage(part, whole):
+    return 100 * float(part) / float(whole)
+
+
+def handle_file(sock, file_size, file_name):
+    st = time.time()
+    data = bytearray()
+    dest = '{}'.format(file_name)
+    received = 0
+    with open(dest, 'ab+') as f:
+        while received < file_size:
+            if file_size - received >= 65536:
+                packet = sock.recv(65536)
+            else:
+                packet = sock.recv(file_size - received)
+            if not packet:
+                return None
+            received += len(packet)
+            data.extend(packet)
+            f.write(data)
+            data = bytearray()
+            if time.time() - st >= 1:  # opcional, informacao sobre o total ja carregado
+                print('bytes downloaded:', percentage(received, file_size))
+                st = time.time()
+    print('success on receiving and saving {} for {}'.format(file_name, server_input.getpeername()))
+    return
+
+
+def handle_response(server_input, response):
+    print(response)
+    resp = pickle.loads(response)
+    if resp['file_size']:
+        print("Will receive a file with: ", resp['file_size'])
+        handle_file(server_input, resp['file_size'], resp['file_name'])
+    else:
+        print(resp)
+
+
 def on_new_client(server_input, addr):
     # print("Connected clients:", clients)
-    info_bin = b''
-    st = time.time()
     while True:
         try:
             response = server_input.recv(2048)
@@ -26,29 +64,20 @@ def on_new_client(server_input, addr):
             if not response:
                 print("NULL RESPONSE")
                 break
-            print("resp:", response)
-            if response == "exit":
+            if response == b"exit":
                 print(f'{addr} DISCONNECTED')
                 clients.remove((server_input, addr))
-            info_bin += response
-            if time.time() - st >= 2:  # opcional, informacao sobre o total ja carregado
-                print('bytes downloaded:', len(info_bin))
-                st = time.time()
+                clients_list()
+                break
+            handle_response(server_input, response)
+
             print(f'{addr} => {response}')
         except ConnectionResetError:
             clients.remove((server_input, addr))
             print(f'{addr} SUDDENLY DISCONNECTED')
-        finally:
             clients_list()
             break
-    print(info_bin)
-    info = pickle.loads(info_bin)
-    print("INFO: ", info)
-    if info['file']:
-        dest = '{}'.format(info['name'])
-        with open(dest, 'wb') as f:
-            f.write(info['file'])
-        print('success on receiving and saving {} for {}'.format(info['name'], server_input.getpeername()))
+
     server_input.close()
     return
 

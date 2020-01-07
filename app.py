@@ -55,7 +55,7 @@ class Application(App):
         Window.close()
 
     def print_selected(self, obj):
-        print(self.clients_list.viewclass.selected_items)
+        print(self.clients_list.clients_listviewclass.selected_items)
 
     def open_file_selector(self, obj):
         root = tk.Tk()
@@ -63,12 +63,38 @@ class Application(App):
 
         self.file_path = filedialog.askopenfilename()
         print(self.file_path)
-        self.selected_file = open(self.file_path, 'rb').read()
-        self.file_name = os.path.basename(os.path.normpath(self.file_path))
-        info = {'name': self.file_name, 'file': self.selected_file, 'opcao': 'file'}
-        print(info)
-        client_socket.sendall(pickle.dumps(info))
+        self.selected_file = open(self.file_path, 'rb')
 
+        self.file_name = os.path.basename(os.path.normpath(self.file_path))
+
+        selected_destinations = ""
+        for x in self.clients_list.viewclass.selected_items:
+            selected_destinations += x['text'] + ";"
+        selected_destinations = selected_destinations[0:-1]
+
+        # move to end of file
+        self.selected_file.seek(0, 2)
+        # get current position
+        self.file_size = self.selected_file.tell()
+        # go back to start of file
+        self.selected_file.seek(0, 0)
+
+        pre_info = {'file_size': self.file_size, 'file_name': self.file_name, 'destinations': selected_destinations}
+        client_socket.send(pickle.dumps(pre_info))
+
+        sent = 0
+        while True:
+            if self.file_size - sent > 65536:
+                buf = self.selected_file.read(65536)
+            else:
+                buf = self.selected_file.read(self.file_size - sent)
+            if buf:
+                client_socket.send(buf)
+                sent += len(buf)
+            else:
+                break
+
+        print("file sent")
 
 
 app = Application()
@@ -86,12 +112,14 @@ def clients_list():
         except ConnectionAbortedError:
             client_socket.close()
             return
+        except EOFError:
+            continue
 
         app.clients_list.build_client_list()
 
 
 _thread.start_new_thread(clients_list, ())
-###################a#########################################
+#############################################################
 
 
 app.run()
