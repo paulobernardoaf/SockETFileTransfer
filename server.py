@@ -12,45 +12,73 @@ def clients_list():
     for client in clients:
         list.append(client[1])
 
-    print(clients)
+    info = {'clients': list}
+
+    print(info)
     for client in clients:
-        client[0].sendto(pickle.dumps(list), client[1])
+        client[0].sendto(pickle.dumps(info), client[1])
 
 
 def percentage(part, whole):
     return 100 * float(part) / float(whole)
 
+def search_server_input(tuple):
+    for x in clients:
+        if x[1] == tuple:
+            return x[0]
 
-def handle_file(sock, file_size, file_name):
+    print("NO SERVER_INPUTS FOUND")
+    return None
+
+
+def server_handle_file(sock, file_size, file_name, destinations, sender):
     st = time.time()
     data = bytearray()
     dest = '{}'.format(file_name)
     received = 0
-    with open(dest, 'ab+') as f:
-        while received < file_size:
-            if file_size - received >= 65536:
-                packet = sock.recv(65536)
-            else:
-                packet = sock.recv(file_size - received)
-            if not packet:
-                return None
-            received += len(packet)
-            data.extend(packet)
-            f.write(data)
-            data = bytearray()
-            if time.time() - st >= 1:  # opcional, informacao sobre o total ja carregado
-                print('bytes downloaded:', percentage(received, file_size))
-                st = time.time()
+    for client in destinations:
+        client = client.split(':')
+        info = {'file_size': file_size, 'file_name': file_name}
+        destination = (client[0], int(client[1]))
+        # print("DESTINATION AND SENDER", destination, sender)
+        if destination != sender:
+            client_sock = search_server_input(destination)
+            if client_sock:
+                client_sock.sendto(pickle.dumps(info), destination)
+    while received < file_size:
+        if file_size - received >= 65536:
+            packet = sock.recv(65536)
+        else:
+            packet = sock.recv(file_size - received)
+        if not packet:
+            return None
+
+        pack_length = len(packet)
+
+        received += pack_length
+
+        for client in destinations:# TODO NOT WORKING PROBABLY
+            client = client.split(':')
+            destination = (client[0], int(client[1]))
+            if destination != sender:
+                client_sock = search_server_input(destination)
+                if client_sock:
+                    print("sending to => ", destination, "   bytes => ", pack_length)
+                    client_sock.sendto(packet, destination)
+        print("")
     print('success on receiving and saving {} for {}'.format(file_name, server_input.getpeername()))
+    print('received a total of: ', received)
     return
 
 
-def handle_response(server_input, response):
+def handle_response(server_input, addr, response):
     print(response)
     resp = pickle.loads(response)
-    if resp['file_size']:
+    if 'file_size' in resp:
         print("Will receive a file with: ", resp['file_size'])
-        handle_file(server_input, resp['file_size'], resp['file_name'])
+        destinations = resp['destinations'].split(";")
+        destinations = list(dict.fromkeys(destinations))    # removes duplicates
+        server_handle_file(server_input, resp['file_size'], resp['file_name'], destinations, addr)
     else:
         print(resp)
 
@@ -63,15 +91,17 @@ def on_new_client(server_input, addr):
             # response = pickle.loads(response)
             if not response:
                 print("NULL RESPONSE")
+                clients.remove((server_input, addr))
+                clients_list()
                 break
             if response == b"exit":
                 print(f'{addr} DISCONNECTED')
                 clients.remove((server_input, addr))
                 clients_list()
                 break
-            handle_response(server_input, response)
+            handle_response(server_input, addr, response)
 
-            print(f'{addr} => {response}')
+            # print(f'{addr} => {response}')
         except ConnectionResetError:
             clients.remove((server_input, addr))
             print(f'{addr} SUDDENLY DISCONNECTED')
