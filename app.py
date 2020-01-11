@@ -24,9 +24,10 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.graphics import Color, Rectangle
-import ClientsList
 from kivy.uix.filechooser import FileChooserListView
 from kivy.uix.popup import Popup
+import ClientsList
+import FilesList
 
 address = ("localhost", 20000)
 
@@ -59,41 +60,45 @@ class P(FloatLayout):
 
     def open(self, path, filename):
 
-        self.file_path = filename[0]
-        self.selected_file = open(self.file_path, 'rb')
+        # self.file_path = filename[0]
+        FilesList.files.append(filename[0])
 
-        self.file_name = os.path.basename(os.path.normpath(self.file_path))
+        app.files_list.build_files_list()
+        
+        # self.selected_file = open(self.file_path, 'rb')
 
-        selected_destinations = ""
-        for x in Application.clients_list.viewclass.selected_items:
-            selected_destinations += x['text'] + ";"
-        selected_destinations = selected_destinations[0:-1]
+        # self.file_name = os.path.basename(os.path.normpath(self.file_path))
 
-        print(selected_destinations)
+        # selected_destinations = ""
+        # for x in Application.clients_list.viewclass.selected_items:
+        #     selected_destinations += x['text'] + ";"
+        # selected_destinations = selected_destinations[0:-1]
 
-        # move to end of file
-        self.selected_file.seek(0, 2)
-        # get current position
-        self.file_size = self.selected_file.tell()
-        # go back to start of file
-        self.selected_file.seek(0, 0)
+        # print(selected_destinations)
 
-        pre_info = {'file_size': self.file_size, 'file_name': self.file_name, 'destinations': selected_destinations}
-        client_socket.send(pickle.dumps(pre_info))
+        # # move to end of file
+        # self.selected_file.seek(0, 2)
+        # # get current position
+        # self.file_size = self.selected_file.tell()
+        # # go back to start of file
+        # self.selected_file.seek(0, 0)
 
-        sent = 0
-        while True:
-            if self.file_size - sent > 65536:
-                buf = self.selected_file.read(65536)
-            else:
-                buf = self.selected_file.read(self.file_size - sent)
-            if buf:
-                client_socket.send(buf)
-                sent += len(buf)
-            else:
-                break
+        # pre_info = {'file_size': self.file_size, 'file_name': self.file_name, 'destinations': selected_destinations}
+        # client_socket.send(pickle.dumps(pre_info))
 
-        print("file sent")
+        # sent = 0
+        # while True:
+        #     if self.file_size - sent > 65536:
+        #         buf = self.selected_file.read(65536)
+        #     else:
+        #         buf = self.selected_file.read(self.file_size - sent)
+        #     if buf:
+        #         client_socket.send(buf)
+        #         sent += len(buf)
+        #     else:
+        #         break
+
+        # print("file sent")
 
 
 class CustomLayout(BoxLayout):
@@ -113,32 +118,35 @@ class CustomLayout(BoxLayout):
         self.rect.size = instance.size
 
 class Application(App):
-    clients_list = ClientsList.ClientsRecycleView()
+    clients_list    = ClientsList.ClientsRecycleView()
+    files_list      = FilesList.FilesRecycleView()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.clients_list = ClientsList.ClientsRecycleView()
+        self.files_list   = FilesList.FilesRecycleView()
 
     def build(self):
-        self.box = BoxLayout(orientation='horizontal', spacing=50)
+        self.box = BoxLayout(orientation='horizontal', spacing=0)
         self.left_box = CustomLayout(orientation='vertical', spacing=10, size_hint_x=None, width=250)
         self.right_box = BoxLayout(orientation='vertical', spacing=10)
 
-        self.selected_files = GridLayout(cols=3, row_force_default=True, row_default_height=50)
-
-        self.client_list_label = Label(text="[color=#F2F2F2]Dashy[/color]", font_size="25sp",
+        self.client_list_label = Label(text="[color=#F2F2F2]1/2 ET[/color]", font_size="25sp",
                                        size_hint=(1, None), height=50, markup=True)
 
-        self.quit_button = Button(text="Quit", on_press=self.close_and_quit, size_hint=(1, .1),
-                                   color=get_color_from_hex("#F2F2F2"), background_color=get_color_from_hex("#002140"), background_normal='')
-        self.file_selector_button = Button(text="Add File", on_release=self.show_popup, size_hint=(.5, .1),
-                                           pos_hint={'right': .75})
+        self.quit_button = Button(text="Quit", on_press=self.close_and_quit, size_hint=(1, .1), color=get_color_from_hex("#F2F2F2"),
+                                    background_color=get_color_from_hex("#002140"), background_normal='')
+
+        self.file_selector_button = Button(text="Add File", on_release=self.show_popup, size_hint=(None, None), size=(100,40),
+                                           pos_hint={'center_x': .5}, background_color=get_color_from_hex("#1f8ffb"),
+                                           background_normal='')
 
         self.left_box.add_widget(self.client_list_label)
         self.left_box.add_widget(self.clients_list)
         self.left_box.add_widget(self.quit_button)
 
-        self.right_box.add_widget(self.selected_files)
+
+        self.right_box.add_widget(self.files_list)
         self.right_box.add_widget(self.file_selector_button)
 
         self.box.add_widget(self.left_box)
