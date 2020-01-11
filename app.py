@@ -6,32 +6,33 @@ import time
 
 from kivy.config import Config
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.widget import Widget
 
 Config.set('graphics', 'resizable', False)
 Config.set('graphics', 'width', '1280')
 Config.set('graphics', 'height', '720')
 
-import tkinter as tk
-from tkinter import filedialog
+from kivy.core.window import Window
+from kivy.utils import get_color_from_hex
+
+Window.clearcolor = get_color_from_hex("#F2F2F2")
 
 from kivy.app import App
-from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
+from kivy.graphics import Color, Rectangle
 import ClientsList
 from kivy.uix.filechooser import FileChooserListView
 from kivy.uix.popup import Popup
-
-
 
 address = ("localhost", 20000)
 
 # Create sockets
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect(address)
-
 
 Builder.load_file("kvFile.kv")
 
@@ -95,8 +96,23 @@ class P(FloatLayout):
         print("file sent")
 
 
-class Application(App):
+class CustomLayout(BoxLayout):
 
+    def __init__(self, **kwargs):
+        # make sure we aren't overriding any important functionality
+        super(CustomLayout, self).__init__(**kwargs)
+
+        with self.canvas.before:
+            Color(0, 0.08, 0.16, 1)  # green; colors range from 0-1 instead of 0-255
+            self.rect = Rectangle(size=self.size, pos=self.pos)
+
+        self.bind(size=self._update_rect, pos=self._update_rect)
+
+    def _update_rect(self, instance, value):
+        self.rect.pos = instance.pos
+        self.rect.size = instance.size
+
+class Application(App):
     clients_list = ClientsList.ClientsRecycleView()
 
     def __init__(self, **kwargs):
@@ -104,16 +120,30 @@ class Application(App):
         self.clients_list = ClientsList.ClientsRecycleView()
 
     def build(self):
-        self.box = BoxLayout(orientation='horizontal', spacing=20)
-        self.quit_button = Button(text="Quit", on_press=self.close_and_quit, size_hint=(.1, .1))
-        self.print_selected_button = Button(text="Print", on_press=self.print_selected, size_hint=(.1, .1))
-        self.box.add_widget(self.quit_button)
-        self.box.add_widget(self.clients_list)
-        self.box.add_widget(self.print_selected_button)
-        self.file_selector_button = Button(text="Select File", on_release=self.show_popup, size_hint=(.1, .1))
+        self.box = BoxLayout(orientation='horizontal', spacing=50)
+        self.left_box = CustomLayout(orientation='vertical', spacing=10, size_hint_x=None, width=250)
+        self.right_box = BoxLayout(orientation='vertical', spacing=10)
 
-        # self.box.add_widget(filechooser)
-        self.box.add_widget(self.file_selector_button)
+        self.selected_files = GridLayout(cols=3, row_force_default=True, row_default_height=50)
+
+        self.client_list_label = Label(text="[color=#F2F2F2]Dashy[/color]", font_size="25sp",
+                                       size_hint=(1, None), height=50, markup=True)
+
+        self.quit_button = Button(text="Quit", on_press=self.close_and_quit, size_hint=(1, .1),
+                                   color=get_color_from_hex("#F2F2F2"), background_color=get_color_from_hex("#002140"), background_normal='')
+        self.file_selector_button = Button(text="Add File", on_release=self.show_popup, size_hint=(.5, .1),
+                                           pos_hint={'right': .75})
+
+        self.left_box.add_widget(self.client_list_label)
+        self.left_box.add_widget(self.clients_list)
+        self.left_box.add_widget(self.quit_button)
+
+        self.right_box.add_widget(self.selected_files)
+        self.right_box.add_widget(self.file_selector_button)
+
+        self.box.add_widget(self.left_box)
+        self.box.add_widget(self.right_box)
+
         return self.box
 
     def show_popup(self, obj):
@@ -142,8 +172,8 @@ class Application(App):
             return
 
 
-
 app = Application()
+
 
 def percentage(part, whole):
     return 100 * float(part) / float(whole)
@@ -174,11 +204,7 @@ def handle_file(sock, file_size, file_name):
     print('success on receiving and saving {} for {}'.format(file_name, sock.getpeername()))
     return
 
-############################################################
-# VAMOS TER Q MUDAR ISSO POIS OS CLIENTES VAO TER Q RECEBER COISAS ALEM DA LISTA DE CLIENTES
-# PROVAVELMENTE VAMOS TER QUE ENVIAR UMA LABEL INICIAL PARA DIFERENCIAR CADA TIPO DE MENSAGEM
-# SE FOR A LISTA DE CLIENTES COMEÇA COM client_list, SE FOR ARQUIVO PARA SER RECEBIDO VAI SER new_file
-# E ASSIM POR DIANTE
+
 def clients_list():
     while True:
         try:
@@ -204,11 +230,9 @@ def clients_list():
         except EOFError:
             continue
 
-        app.clients_list.build_client_list()
+        app.clients_list.build_client_list(client_socket.getsockname())
 
 
 _thread.start_new_thread(clients_list, ())
-#############################################################
-
 
 app.run()
