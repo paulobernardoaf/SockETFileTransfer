@@ -46,12 +46,12 @@ class DestinationsPopup(FloatLayout):
     destinations_list = ClientsList.ClientsRecycleView()
 
     def build(self):
-        self.main_box = BoxLayout(orientation='vertical', spacing=10)
+        self.main_box = BoxLayout(orientation='vertical', spacing=10, padding=(0,10,0,0))
         self.destinations_list = ClientsList.ClientsRecycleView()
         self.destinations_list.build_client_list(client_socket.getsockname())
 
         self.send_button = Button(text="Send Files", size_hint=(None, None), size=(120, 50),
-                                               pos_hint={'right': 1}, color=get_color_from_hex("#F2F2F2"),
+                                               pos_hint={'center_x': .5}, color=get_color_from_hex("#F2F2F2"),
                                                background_color=get_color_from_hex("#1890ff"), font_size=18,
                                                on_release=self.send_files)
 
@@ -143,10 +143,11 @@ class P(FloatLayout):
         print("selected: %s" % filename[0])
 
     def open(self, filename):
-        FilesList.files.append(filename[0])
+        if filename:
+            FilesList.files.append(filename[0])
 
-        app.files_list.build_files_list()
-        app.popup_window.dismiss()
+            app.files_list.build_files_list()
+            app.popup_window.dismiss()
 
 
 class CustomLayout(BoxLayout):
@@ -210,20 +211,20 @@ class Application(App):
         self.files_list   = FilesList.FilesRecycleView()
 
         if len(self.files_list.data) == 0:
-            self.files_list.data.append({'label2': {'text': 'No file selected'}, 'button': False})
-
+            self.files_list.data.append({'label2': {'text': 'No file selected'}, 'button': False, 'add_button': False})
+        self.files_list.data.append({'label2': {'text': ''}, 'button': False, 'add_button': True})
 
     def build(self):
         self.box = BoxLayout(orientation='horizontal', spacing=0)
         self.left_box = CustomLayout(orientation='vertical', spacing=10, size_hint_x=None, width=250)
-        self.right_box = BoxLayout(orientation='vertical', spacing=10, padding=(20, -15, 20, 20))
+        self.right_box = BoxLayout(orientation='vertical', spacing=10, padding=(20, -15, 10, 20))
         self.name_logo_box = BoxLayout(orientation='horizontal', spacing=60, size_hint=(None, None), height=110)
 
 
         self.title_box = BorderBox(orientation='horizontal', spacing=50, size_hint=(1, None),
                                    padding=(10, 0, 0, 0)).build()
 
-        self.app_logo = Image(source='logo.png', size_hint=(None, None), size=(100, 100))
+        self.app_logo = Image(source='resources/logo.png', size_hint=(None, None), size=(100, 100))
 
         self.client_list_label = Label(text="[color=#F2F2F2]Files[b]Transfer[/b][/color]", font_size="25sp",
                                        size_hint=(1, None), height=90, markup=True)
@@ -235,12 +236,8 @@ class Application(App):
                                   color=get_color_from_hex("#F2F2F2"), background_color=get_color_from_hex("#002140"),
                                   background_normal='')
 
-        self.file_selector_button = RoundedButton(text="Add File", on_release=self.show_popup, size_hint=(None, None),
-                                                  size=(100, 40), pos_hint={'center_x': .5}, font_size=16,
-                                                  background_color=get_color_from_hex("#1f8ffb")).build()
-
-        self.send_files_button = RoundedButton(text="Send Files", size_hint=(None, None), size=(120, 50),
-                                               pos_hint={'right': 1}, color=get_color_from_hex("#F2F2F2"),
+        self.send_files_button = RoundedButton(text="Select destinations", size_hint=(None, None), size=(170, 50),
+                                               pos_hint={'right': .96}, color=get_color_from_hex("#F2F2F2"),
                                                background_color=get_color_from_hex("#1890ff"), font_size=18,
                                                on_release=self.show_destinations_popup).build()
 
@@ -254,7 +251,6 @@ class Application(App):
 
         self.right_box.add_widget(self.title_box)
         self.right_box.add_widget(self.files_list)
-        self.right_box.add_widget(self.file_selector_button)
         self.right_box.add_widget(self.send_files_button)
 
         self.box.add_widget(self.left_box)
@@ -272,7 +268,9 @@ class Application(App):
     def show_destinations_popup(self):
         show = DestinationsPopup().build()
 
-        self.destinations_popup = Popup(title="Select the destinations", content=show, size_hint=(None, None), size=(400, 400))
+        self.destinations_popup = Popup(title="Select the destinations", title_size=18, title_align='center', content=show,
+                                        size_hint=(None, None), size=(400, 400), separator_color=get_color_from_hex("#1890ff"),
+                                        background='resources/branco.jpg', background_color=get_color_from_hex("#001529"))
 
         self.destinations_popup.open()
 
