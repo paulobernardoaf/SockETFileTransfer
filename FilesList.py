@@ -19,6 +19,11 @@ Builder.load_string('''
         Rectangle:
             pos: self.pos
             size: self.size
+        Color:
+            rgba: rgba("#002140")
+        Line:
+            width: 1
+            rectangle: self.x + 20, self.y, self.width - 50, 0
     label1_text: 'label 1 text'
     label2_text: 'label 2 text'
     label3_text: 'label 3 text'
@@ -33,7 +38,7 @@ Builder.load_string('''
         text: 'Remove'
         size_hint_x: None
         width: 100
-        background_color: (1, 0, 1, 1)
+        background_color: (1, 77/255, 79/255, 1)
         background_normal: ''
         on_press: root.removeFile(id_label1.text)
         

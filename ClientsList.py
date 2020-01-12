@@ -50,10 +50,10 @@ class ClientsRecycleView(RecycleView):
 
     def build_client_list(self, sock):
         print("antes de criar a listbox", clients)
-        self.data = []
-        for x in clients:
-            if x != sock:
-                self.data.append({'text': str(x[0]) + ':' + str(x[1])})
-        # self.data = [{'text': str(x[0]) + ':' + str(x[1])} for x in clients]
+        # self.data = []
+        # for x in clients:
+        #     if x != sock:
+        #         self.data.append({'text': str(x[0]) + ':' + str(x[1])})
+        self.data = [{'text': str(x[0]) + ':' + str(x[1])} for x in clients]
         self.refresh_from_data()
         print(self.data)

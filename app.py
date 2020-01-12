@@ -45,7 +45,7 @@ class P(FloatLayout):
         self.files_box = BoxLayout(orientation='horizontal', spacing=20)
         self.button_box = BoxLayout(orientation='horizontal', spacing=20)
 
-        filechooser = FileChooserListView()
+        filechooser = FileChooserListView(filters=[lambda folder, filename: not filename.endswith('.sys')])
         filechooser.bind(on_selection=lambda x: self.selected(filechooser.selection))
 
         open_btn = Button(text='open', size_hint=(1, .2))
@@ -64,7 +64,7 @@ class P(FloatLayout):
         FilesList.files.append(filename[0])
 
         app.files_list.build_files_list()
-        
+
         # self.selected_file = open(self.file_path, 'rb')
 
         # self.file_name = os.path.basename(os.path.normpath(self.file_path))
@@ -108,7 +108,7 @@ class CustomLayout(BoxLayout):
         super(CustomLayout, self).__init__(**kwargs)
 
         with self.canvas.before:
-            Color(0, 0.08, 0.16, 1)  # green; colors range from 0-1 instead of 0-255
+            Color(0, 0.08, 0.16, 1)  # colors range from 0-1 instead of 0-255
             self.rect = Rectangle(size=self.size, pos=self.pos)
 
         self.bind(size=self._update_rect, pos=self._update_rect)
@@ -116,6 +116,37 @@ class CustomLayout(BoxLayout):
     def _update_rect(self, instance, value):
         self.rect.pos = instance.pos
         self.rect.size = instance.size
+
+class BorderBox(BoxLayout):
+
+    def __init__(self, orientation = '', spacing = 0, size_hint = (None, None), padding = (0, 0, 0, 0)):
+        super().__init__()
+        self.orientation = orientation
+        self.spacing     = spacing
+        self.size_hint   = size_hint
+        self.padding     = padding
+
+    def build(self):
+        return self
+
+class RoundedButton(Button):
+
+    def __init__(self, text="", on_release=None, size_hint=(None, None), size=(None,None), pos_hint={'center_x': .5},
+                 color=(1,1,1,1), background_color=(0,0,0,1), font_size=12):
+        super().__init__()
+        self.text       = text
+        self.on_release = on_release
+        self.size_hint  = size_hint
+        self.size       = size
+        self.pos_hint   = pos_hint
+        self.color      = color
+        self.back_color = background_color
+        self.font_size  = font_size
+
+    def build(self):
+        return self
+
+
 
 class Application(App):
     clients_list    = ClientsList.ClientsRecycleView()
@@ -125,36 +156,51 @@ class Application(App):
         super().__init__(**kwargs)
         self.clients_list = ClientsList.ClientsRecycleView()
         self.files_list   = FilesList.FilesRecycleView()
+        self.files_list.background_color = (0,0,0,1)
 
     def build(self):
         self.box = BoxLayout(orientation='horizontal', spacing=0)
         self.left_box = CustomLayout(orientation='vertical', spacing=10, size_hint_x=None, width=250)
-        self.right_box = BoxLayout(orientation='vertical', spacing=10)
+        self.right_box = BoxLayout(orientation='vertical', spacing=10, padding=(20, 15, 20, 20))
+
+        self.title_box = BorderBox(orientation='horizontal', spacing=50, size_hint=(1, None), padding=(10,0,0,0)).build()
 
         self.client_list_label = Label(text="[color=#F2F2F2]1/2 ET[/color]", font_size="25sp",
                                        size_hint=(1, None), height=50, markup=True)
 
-        self.quit_button = Button(text="Quit", on_press=self.close_and_quit, size_hint=(1, .1), color=get_color_from_hex("#F2F2F2"),
-                                    background_color=get_color_from_hex("#002140"), background_normal='')
+        self.files_list_label = Label(text="[color=#1890ff]Selected files[/color]", font_size="18sp",
+                                    size_hint=(None, None), halign='right', height=50,   markup=True)
 
-        self.file_selector_button = Button(text="Add File", on_release=self.show_popup, size_hint=(None, None), size=(100,40),
-                                           pos_hint={'center_x': .5}, background_color=get_color_from_hex("#1f8ffb"),
-                                           background_normal='')
+
+        self.quit_button = Button(text="Quit", on_press=self.close_and_quit, size_hint=(1, .1),
+                                  color=get_color_from_hex("#F2F2F2"), background_color=get_color_from_hex("#002140"),
+                                  background_normal='')
+
+        self.file_selector_button = RoundedButton(text="Add File", on_release=self.show_popup, size_hint=(None, None),
+                                                  size=(100,40), pos_hint={'center_x': .5},
+                                                  background_color=get_color_from_hex("#1f8ffb")).build()
+
+        self.send_files_button = RoundedButton(text="Send Files", size_hint=(None, None), size=(120,50),
+                                               pos_hint={'right': 1}, color=get_color_from_hex("#F2F2F2"),
+                                               background_color=get_color_from_hex("#1890ff"), font_size=18).build()
 
         self.left_box.add_widget(self.client_list_label)
         self.left_box.add_widget(self.clients_list)
         self.left_box.add_widget(self.quit_button)
 
+        self.title_box.add_widget(self.files_list_label)
 
+        self.right_box.add_widget(self.title_box)
         self.right_box.add_widget(self.files_list)
         self.right_box.add_widget(self.file_selector_button)
+        self.right_box.add_widget(self.send_files_button)
 
         self.box.add_widget(self.left_box)
         self.box.add_widget(self.right_box)
 
         return self.box
 
-    def show_popup(self, obj):
+    def show_popup(self):
         show = P().build()
 
         popup_window = Popup(title="JANELINHA", content=show, size_hint=(None, None), size=(400, 400))
