@@ -18,10 +18,10 @@ Builder.load_string('''
     label3_text: 'label 3 text'
     pos: self.pos
     size: self.size
-    show_button: True
+    remove_button: True
     add_button: False
     add_func: print(1)
-    
+
     canvas.before:
         Color:
             rgba: (242/255, 242/255, 242/255, .9)
@@ -33,26 +33,30 @@ Builder.load_string('''
         Line:
             width: 1
             rectangle: self.x + 20, self.y, self.width - 50, 0
+    Image:
+        source: 'resources/file_icon.png'
+        size_hint: None, None
+        size: (48, 48) if root.remove_button else (0, 0)
     Label:
         id: id_label1
         color: (0, 0, 0, .9)
         text: root.label1_text
         size_hint_x: None
-        width: 880 if root.show_button else 1025 if not root.add_button else 850
+        width: 880 if root.remove_button else 1025 if not root.add_button else 850
         text_size: (810, None)
-        halign: 'left' if root.show_button else 'center'
+        halign: 'left' if root.remove_button else 'center'
     Button:
         id: id_label2
         text: 'Remove'
         size_hint: None, None
-        size: (70, 30) if root.show_button else (0, 0)
+        size: (70, 30) if root.remove_button else (0, 0)
         background_color: (0, 0, 0, 0)
-        color: (1, 1, 1, 1) if root.show_button else (0, 0, 0, 0)
+        color: (1, 1, 1, 1) if root.remove_button else (0, 0, 0, 0)
         background_normal: ''
         on_press: root.removeFile(id_label1.text)
         canvas.before:
             Color:
-                rgba: (1, 77/255, 79/255, 1) if root.show_button else (0, 0, 0, 0)
+                rgba: (1, 77/255, 79/255, 1) if root.remove_button else (0, 0, 0, 0)
             RoundedRectangle:
                 size: self.size
                 pos: self.pos
@@ -69,12 +73,12 @@ Builder.load_string('''
         font_size: 16
         canvas.before:
             Color:
-                rgba: rgba("#1890ff") if root.add_button else (0, 0, 0, 0)
+                rgba: rgba("#1890ff") if root.add_button else (0, 0, 0, 1)
             RoundedRectangle:
                 size: self.size
                 pos: self.pos
                 radius: [5, 5, 5, 5]
-        
+
 
 <FilesRecycleView>:
     viewclass: 'FilesLabel'
@@ -100,7 +104,7 @@ class FilesLabel(RecycleDataViewBehavior, GridLayout):
     index = None
     selected = BooleanProperty(False)
     selectable = BooleanProperty(False)
-    cols = 3
+    cols = 4
     row_force_default = True
     row_default_height = 50
 
@@ -108,8 +112,8 @@ class FilesLabel(RecycleDataViewBehavior, GridLayout):
         ''' Catch and handle the view changes '''
         self.index = index
         self.label1_text = data['label2']['text']
-        self.show_button = data['button']
-        self.add_button  = data['add_button']
+        self.remove_button = data['button']
+        self.add_button = data['add_button']
 
         root = App.get_running_app()
         self.add_func = root.show_popup
@@ -122,6 +126,7 @@ class FilesLabel(RecycleDataViewBehavior, GridLayout):
         files.remove(name)
         root = App.get_running_app()
         root.files_list.build_files_list()
+
 
 class FilesRecycleView(RecycleView):
     global files

@@ -241,9 +241,13 @@ class Application(App):
                                                background_color=get_color_from_hex("#1890ff"), font_size=18,
                                                on_release=self.show_destinations_popup).build()
 
+        self.connected_clients_label = Label(text="Connected clients:", font_size="18sp",
+                                       size_hint=(0.7, None), height=30, markup=True, halign='left')
+
         self.name_logo_box.add_widget(self.app_logo)
         self.name_logo_box.add_widget(self.client_list_label)
         self.left_box.add_widget(self.name_logo_box)
+        self.left_box.add_widget(self.connected_clients_label)
         self.left_box.add_widget(self.clients_list)
         self.left_box.add_widget(self.quit_button)
 
