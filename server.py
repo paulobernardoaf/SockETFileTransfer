@@ -31,54 +31,55 @@ def search_server_input(tuple):
     return None
 
 
-def server_handle_file(sock, file_size, file_name, destinations, sender):
-    st = time.time()
-    data = bytearray()
-    dest = '{}'.format(file_name)
-    received = 0
+def server_handle_files(sock, files_sizes, files_names, destinations, sender, files_quantity):
+
+
     for client in destinations:
         client = client.split(':')
-        info = {'file_size': file_size, 'file_name': file_name}
+        info = {'files_sizes': files_sizes, 'files_names': files_names}
         destination = (client[0], int(client[1]))
         # print("DESTINATION AND SENDER", destination, sender)
         if destination != sender:
             client_sock = search_server_input(destination)
             if client_sock:
                 client_sock.sendto(pickle.dumps(info), destination)
-    while received < file_size:
-        if file_size - received >= 65536:
-            packet = sock.recv(65536)
-        else:
-            packet = sock.recv(file_size - received)
-        if not packet:
-            return None
 
-        pack_length = len(packet)
+    for i in range(files_quantity):
+        received = 0
+        while received < files_sizes[i]:
+            if files_sizes[i] - received >= 65536:
+                packet = sock.recv(65536)
+            else:
+                packet = sock.recv(files_sizes[i] - received)
+            if not packet:
+                return None
 
-        received += pack_length
+            pack_length = len(packet)
 
-        for client in destinations:# TODO NOT WORKING PROBABLY
-            client = client.split(':')
-            destination = (client[0], int(client[1]))
-            if destination != sender:
-                client_sock = search_server_input(destination)
-                if client_sock:
-                    print("sending to => ", destination, "   bytes => ", pack_length)
-                    client_sock.sendto(packet, destination)
-        print("")
-    print('success on receiving and saving {} for {}'.format(file_name, server_input.getpeername()))
-    print('received a total of: ', received)
+            received += pack_length
+
+            for client in destinations:# TODO NOT WORKING PROBABLY
+                client = client.split(':')
+                destination = (client[0], int(client[1]))
+                if destination != sender:
+                    client_sock = search_server_input(destination)
+                    if client_sock:
+                        # print("sending to => ", destination, "   bytes => ", pack_length)
+                        client_sock.sendto(packet, destination)
+            # print("")
+        print('success on receiving and saving {} for {}'.format(files_names[i], server_input.getpeername()))
+        print('received a total of: ', received)
     return
 
 
 def handle_response(server_input, addr, response):
-    print(response)
+    # print(response)
     resp = pickle.loads(response)
-    if 'file_size' in resp:
-        print("Will receive a file with: ", resp['file_size'])
+    if 'files_sizes' in resp:
+        print("Will receive ", len(resp['files_sizes']), " files")
         destinations = resp['destinations'].split(";")
         destinations = list(dict.fromkeys(destinations))    # removes duplicates
-        server_handle_file(server_input, resp['file_size'], resp['file_name'], destinations, addr)
+        server_handle_files(server_input, resp['files_sizes'], resp['files_names'], destinations, addr, len(resp['files_sizes']))
     else:
         print(resp)
 

@@ -6,11 +6,13 @@ import time
 
 from kivy.config import Config
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.image import Image
 from kivy.uix.widget import Widget
 
 Config.set('graphics', 'resizable', False)
 Config.set('graphics', 'width', '1280')
 Config.set('graphics', 'height', '720')
+Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
 
 from kivy.core.window import Window
 from kivy.utils import get_color_from_hex
@@ -28,6 +30,8 @@ from kivy.uix.filechooser import FileChooserListView
 from kivy.uix.popup import Popup
 import ClientsList
 import FilesList
+
+
 
 address = ("localhost", 20000)
 
@@ -59,7 +63,6 @@ class P(FloatLayout):
         print("selected: %s" % filename[0])
 
     def open(self, path, filename):
-
         # self.file_path = filename[0]
         FilesList.files.append(filename[0])
 
@@ -117,74 +120,81 @@ class CustomLayout(BoxLayout):
         self.rect.pos = instance.pos
         self.rect.size = instance.size
 
+
 class BorderBox(BoxLayout):
 
-    def __init__(self, orientation = '', spacing = 0, size_hint = (None, None), padding = (0, 0, 0, 0)):
+    def __init__(self, orientation='', spacing=0, size_hint=(None, None), padding=(0, 0, 0, 0)):
         super().__init__()
         self.orientation = orientation
-        self.spacing     = spacing
-        self.size_hint   = size_hint
-        self.padding     = padding
+        self.spacing = spacing
+        self.size_hint = size_hint
+        self.padding = padding
 
     def build(self):
         return self
+
 
 class RoundedButton(Button):
 
-    def __init__(self, text="", on_release=None, size_hint=(None, None), size=(None,None), pos_hint={'center_x': .5},
-                 color=(1,1,1,1), background_color=(0,0,0,1), font_size=12):
+    def __init__(self, text="", on_release=None, size_hint=(None, None), size=(None, None), pos_hint={'center_x': .5},
+                 color=(1, 1, 1, 1), background_color=(0, 0, 0, 1), font_size=12):
         super().__init__()
-        self.text       = text
+        self.text = text
         self.on_release = on_release
-        self.size_hint  = size_hint
-        self.size       = size
-        self.pos_hint   = pos_hint
-        self.color      = color
+        self.size_hint = size_hint
+        self.size = size
+        self.pos_hint = pos_hint
+        self.color = color
         self.back_color = background_color
-        self.font_size  = font_size
+        self.font_size = font_size
 
     def build(self):
         return self
 
 
-
 class Application(App):
-    clients_list    = ClientsList.ClientsRecycleView()
-    files_list      = FilesList.FilesRecycleView()
+    clients_list = ClientsList.ClientsRecycleView()
+    files_list = FilesList.FilesRecycleView()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.clients_list = ClientsList.ClientsRecycleView()
-        self.files_list   = FilesList.FilesRecycleView()
-        self.files_list.background_color = (0,0,0,1)
+        self.files_list = FilesList.FilesRecycleView()
+        self.files_list.background_color = (0, 0, 0, 1)
 
     def build(self):
         self.box = BoxLayout(orientation='horizontal', spacing=0)
         self.left_box = CustomLayout(orientation='vertical', spacing=10, size_hint_x=None, width=250)
         self.right_box = BoxLayout(orientation='vertical', spacing=10, padding=(20, 15, 20, 20))
+        self.name_logo_box = BoxLayout(orientation='horizontal', spacing=60, size_hint=(None, None), height=110)
 
-        self.title_box = BorderBox(orientation='horizontal', spacing=50, size_hint=(1, None), padding=(10,0,0,0)).build()
+        self.title_box = BorderBox(orientation='horizontal', spacing=50, size_hint=(1, None),
+                                   padding=(10, 0, 0, 0)).build()
 
-        self.client_list_label = Label(text="[color=#F2F2F2]1/2 ET[/color]", font_size="25sp",
-                                       size_hint=(1, None), height=50, markup=True)
+        self.app_logo = Image(source='logo.png', size_hint=(None, None), size=(100, 100))
+
+        self.client_list_label = Label(text="[color=#F2F2F2]FileTransfer[/color]", font_size="25sp",
+                                       size_hint=(1, None), height=90, markup=True)
 
         self.files_list_label = Label(text="[color=#1890ff]Selected files[/color]", font_size="18sp",
-                                    size_hint=(None, None), halign='right', height=50,   markup=True)
-
+                                      size_hint=(None, None), halign='right', height=50, markup=True)
 
         self.quit_button = Button(text="Quit", on_press=self.close_and_quit, size_hint=(1, .1),
                                   color=get_color_from_hex("#F2F2F2"), background_color=get_color_from_hex("#002140"),
                                   background_normal='')
 
         self.file_selector_button = RoundedButton(text="Add File", on_release=self.show_popup, size_hint=(None, None),
-                                                  size=(100,40), pos_hint={'center_x': .5},
+                                                  size=(100, 40), pos_hint={'center_x': .5},
                                                   background_color=get_color_from_hex("#1f8ffb")).build()
 
-        self.send_files_button = RoundedButton(text="Send Files", size_hint=(None, None), size=(120,50),
+        self.send_files_button = RoundedButton(text="Send Files", size_hint=(None, None), size=(120, 50),
                                                pos_hint={'right': 1}, color=get_color_from_hex("#F2F2F2"),
-                                               background_color=get_color_from_hex("#1890ff"), font_size=18).build()
+                                               background_color=get_color_from_hex("#1890ff"), font_size=18,
+                                               on_release=self.send_files).build()
 
-        self.left_box.add_widget(self.client_list_label)
+        self.name_logo_box.add_widget(self.app_logo)
+        self.name_logo_box.add_widget(self.client_list_label)
+        self.left_box.add_widget(self.name_logo_box)
         self.left_box.add_widget(self.clients_list)
         self.left_box.add_widget(self.quit_button)
 
@@ -217,13 +227,62 @@ class Application(App):
     def print_selected(self, obj):
         print(self.clients_list.viewclass.selected_items)
 
-    def open_file_selector(self, obj):
-        root = tk.Tk()
-        root.withdraw()
+    def send_files(self):
 
-        self.file_path = filedialog.askopenfilename()
-        if not self.file_path:
-            return
+        selected_destinations = ""
+        for x in Application.clients_list.viewclass.selected_items:
+            selected_destinations += x['text'] + ";"
+        selected_destinations = selected_destinations[0:-1]
+        print(selected_destinations)
+
+        self.files_sizes = []
+        self.files_names = []
+        for file_path in FilesList.files:
+
+            file = open(file_path, 'rb')
+
+            name = os.path.basename(os.path.normpath(file_path))
+
+            # move to end of file
+            file.seek(0, 2)
+            # get current position
+            size = file.tell()
+            # go back to start of file
+            file.seek(0, 0)
+
+            self.files_sizes.append(size)
+            self.files_names.append(name)
+
+        pre_info = {'files_sizes': self.files_sizes, 'files_names': self.files_names, 'destinations': selected_destinations}
+        print(pre_info)
+        client_socket.send(pickle.dumps(pre_info))
+
+        for file_path in FilesList.files:
+
+            self.selected_file = open(file_path, 'rb')
+
+            self.file_name = os.path.basename(os.path.normpath(file_path))
+
+            # move to end of file
+            self.selected_file.seek(0, 2)
+            # get current position
+            self.file_size = self.selected_file.tell()
+            # go back to start of file
+            self.selected_file.seek(0, 0)
+
+            sent = 0
+            while True:
+                if self.file_size - sent > 65536:
+                    buf = self.selected_file.read(65536)
+                else:
+                    buf = self.selected_file.read(self.file_size - sent)
+                if buf:
+                    client_socket.send(buf)
+                    sent += len(buf)
+                else:
+                    break
+
+            print("File sent: ", self.file_name, " Total of: ", sent, " bytes")
 
 
 app = Application()
@@ -233,29 +292,31 @@ def percentage(part, whole):
     return 100 * float(part) / float(whole)
 
 
-def handle_file(sock, file_size, file_name):
-    st = time.time()
-    data = bytearray()
-    dest = '{}'.format(file_name)
-    received = 0
-    with open(dest, 'ab+') as f:
-        while received < file_size:
-            if file_size - received >= 65536:
-                packet = sock.recv(65536)
-            else:
-                packet = sock.recv(file_size - received)
-            if not packet:
-                return None
-            pack_received = len(packet)
-            received += pack_received
-            print("received =>", pack_received)
-            data.extend(packet)
-            f.write(data)
-            data = bytearray()
-            if time.time() - st >= 1:  # opcional, informacao sobre o total ja carregado
-                print('bytes downloaded:', percentage(received, file_size))
-                st = time.time()
-    print('success on receiving and saving {} for {}'.format(file_name, sock.getpeername()))
+def handle_files(sock, files_sizes, files_names, quantity):
+    for i in range(quantity):
+        st = time.time()
+        data = bytearray()
+        dest = '{}'.format(files_names[i])
+        received = 0
+        print("Need to receive: ", files_sizes[i], " bytes")
+        with open(dest, 'ab+') as f:
+            while received < files_sizes[i]:
+                if files_sizes[i] - received >= 65536:
+                    packet = sock.recv(65536)
+                else:
+                    packet = sock.recv(files_sizes[i] - received)
+                if not packet:
+                    return None
+                pack_received = len(packet)
+                received += pack_received
+                print("received =>", pack_received)
+                data.extend(packet)
+                f.write(data)
+                data = bytearray()
+                if time.time() - st >= 1:  # opcional, informacao sobre o total ja carregado
+                    print('bytes downloaded:', percentage(received, files_sizes[i]))
+                    st = time.time()
+        print('success on receiving and saving {} with {} bytes'.format(files_names[i], received))
     return
 
 
@@ -272,12 +333,8 @@ def clients_list():
                 print(response['clients'])
                 ClientsList.clients = response['clients']
 
-            if 'file_size' in response:
-                print(response['file_size'], response['file_name'])
-                print(response)
-                handle_file(client_socket, response['file_size'], response['file_name'])
-
-
+            if 'files_sizes' in response:
+                handle_files(client_socket, response['files_sizes'], response['files_names'], len(response['files_sizes']))
         except ConnectionAbortedError:
             client_socket.close()
             return
