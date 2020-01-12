@@ -274,7 +274,7 @@ class Application(App):
 
         self.destinations_popup = Popup(title="Select the destinations", title_size=18, title_align='center', content=show,
                                         size_hint=(None, None), size=(400, 400), separator_color=get_color_from_hex("#1890ff"),
-                                        background='resources/branco.jpg', background_color=get_color_from_hex("#001529"))
+                                        background='resources/background.jpg')
 
         self.destinations_popup.open()
 
