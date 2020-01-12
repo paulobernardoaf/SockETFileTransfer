@@ -73,13 +73,15 @@ def server_handle_files(sock, files_sizes, files_names, destinations, sender, fi
 
 
 def handle_response(server_input, addr, response):
-    # print(response)
+    print(response)
     resp = pickle.loads(response)
     if 'files_sizes' in resp:
-        print("Will receive ", len(resp['files_sizes']), " files")
-        destinations = resp['destinations'].split(";")
-        destinations = list(dict.fromkeys(destinations))    # removes duplicates
-        server_handle_files(server_input, resp['files_sizes'], resp['files_names'], destinations, addr, len(resp['files_sizes']))
+        if len(resp['destinations']) > 0:
+            print("Will receive ", len(resp['files_sizes']), " files")
+            destinations = resp['destinations'].split(";")
+            destinations = list(dict.fromkeys(destinations))    # removes duplicates
+
+            server_handle_files(server_input, resp['files_sizes'], resp['files_names'], destinations, addr, len(resp['files_sizes']))
     else:
         print(resp)
 

@@ -159,21 +159,25 @@ class Application(App):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.clients_list = ClientsList.ClientsRecycleView()
-        self.files_list = FilesList.FilesRecycleView()
-        self.files_list.background_color = (0, 0, 0, 1)
+        self.files_list   = FilesList.FilesRecycleView()
+
+        if len(self.files_list.data) == 0:
+            self.files_list.data.append({'label2': {'text': 'No file selected'}, 'button': False})
+
 
     def build(self):
         self.box = BoxLayout(orientation='horizontal', spacing=0)
         self.left_box = CustomLayout(orientation='vertical', spacing=10, size_hint_x=None, width=250)
-        self.right_box = BoxLayout(orientation='vertical', spacing=10, padding=(20, 15, 20, 20))
+        self.right_box = BoxLayout(orientation='vertical', spacing=10, padding=(20, -15, 20, 20))
         self.name_logo_box = BoxLayout(orientation='horizontal', spacing=60, size_hint=(None, None), height=110)
+
 
         self.title_box = BorderBox(orientation='horizontal', spacing=50, size_hint=(1, None),
                                    padding=(10, 0, 0, 0)).build()
 
         self.app_logo = Image(source='logo.png', size_hint=(None, None), size=(100, 100))
 
-        self.client_list_label = Label(text="[color=#F2F2F2]FileTransfer[/color]", font_size="25sp",
+        self.client_list_label = Label(text="[color=#F2F2F2]Files[b]Transfer[/b][/color]", font_size="25sp",
                                        size_hint=(1, None), height=90, markup=True)
 
         self.files_list_label = Label(text="[color=#1890ff]Selected files[/color]", font_size="18sp",
@@ -184,7 +188,7 @@ class Application(App):
                                   background_normal='')
 
         self.file_selector_button = RoundedButton(text="Add File", on_release=self.show_popup, size_hint=(None, None),
-                                                  size=(100, 40), pos_hint={'center_x': .5},
+                                                  size=(100, 40), pos_hint={'center_x': .5}, font_size=16,
                                                   background_color=get_color_from_hex("#1f8ffb")).build()
 
         self.send_files_button = RoundedButton(text="Send Files", size_hint=(None, None), size=(120, 50),
@@ -234,6 +238,10 @@ class Application(App):
             selected_destinations += x['text'] + ";"
         selected_destinations = selected_destinations[0:-1]
         print(selected_destinations)
+
+        if len(selected_destinations) == 0:
+            print("Te peguei")
+            return
 
         self.files_sizes = []
         self.files_names = []
