@@ -42,6 +42,86 @@ client_socket.connect(address)
 Builder.load_file("kvFile.kv")
 
 
+class DestinationsPopup(FloatLayout):
+    destinations_list = ClientsList.ClientsRecycleView()
+
+    def build(self):
+        self.main_box = BoxLayout(orientation='vertical', spacing=10)
+        self.destinations_list = ClientsList.ClientsRecycleView()
+        self.destinations_list.build_client_list(client_socket.getsockname())
+
+        self.send_button = Button(text="Send Files", size_hint=(None, None), size=(120, 50),
+                                               pos_hint={'right': 1}, color=get_color_from_hex("#F2F2F2"),
+                                               background_color=get_color_from_hex("#1890ff"), font_size=18,
+                                               on_release=self.send_files)
+
+
+        self.main_box.add_widget(self.destinations_list)
+        self.main_box.add_widget(self.send_button)
+        return self.main_box
+
+    def send_files(self, obj):
+        selected_destinations = ""
+        for x in self.destinations_list.viewclass.selected_items:
+            selected_destinations += x['text'] + ";"
+        selected_destinations = selected_destinations[0:-1]
+        print(selected_destinations)
+
+        if len(selected_destinations) == 0:
+            print("Select at least 1 destination")
+            return
+
+        files_sizes = []
+        files_names = []
+        for file_path in FilesList.files:
+            file = open(file_path, 'rb')
+
+            name = os.path.basename(os.path.normpath(file_path))
+
+            # move to end of file
+            file.seek(0, 2)
+            # get current position
+            size = file.tell()
+            # go back to start of file
+            file.seek(0, 0)
+
+            files_sizes.append(size)
+            files_names.append(name)
+
+        pre_info = {'files_sizes': files_sizes, 'files_names': files_names,
+                    'destinations': selected_destinations}
+        print(pre_info)
+        client_socket.send(pickle.dumps(pre_info))
+
+        for file_path in FilesList.files:
+
+            selected_file = open(file_path, 'rb')
+
+            file_name = os.path.basename(os.path.normpath(file_path))
+
+            # move to end of file
+            selected_file.seek(0, 2)
+            # get current position
+            file_size = selected_file.tell()
+            # go back to start of file
+            selected_file.seek(0, 0)
+
+            sent = 0
+            while True:
+                if file_size - sent > 65536:
+                    buf = selected_file.read(65536)
+                else:
+                    buf = selected_file.read(file_size - sent)
+                if buf:
+                    client_socket.send(buf)
+                    sent += len(buf)
+                else:
+                    break
+
+            print("File sent: ", file_name, " Total of: ", sent, " bytes")
+        app.destinations_popup.dismiss()
+
+
 class P(FloatLayout):
 
     def build(self):
@@ -53,7 +133,7 @@ class P(FloatLayout):
         filechooser.bind(on_selection=lambda x: self.selected(filechooser.selection))
 
         open_btn = Button(text='open', size_hint=(1, .2))
-        open_btn.bind(on_release=lambda x: self.open(filechooser.path, filechooser.selection))
+        open_btn.bind(on_release=lambda x: self.open(filechooser.selection))
 
         self.main_box.add_widget(filechooser)
         self.main_box.add_widget(open_btn)
@@ -62,46 +142,11 @@ class P(FloatLayout):
     def selected(self, filename):
         print("selected: %s" % filename[0])
 
-    def open(self, path, filename):
-        # self.file_path = filename[0]
+    def open(self, filename):
         FilesList.files.append(filename[0])
 
         app.files_list.build_files_list()
-
-        # self.selected_file = open(self.file_path, 'rb')
-
-        # self.file_name = os.path.basename(os.path.normpath(self.file_path))
-
-        # selected_destinations = ""
-        # for x in Application.clients_list.viewclass.selected_items:
-        #     selected_destinations += x['text'] + ";"
-        # selected_destinations = selected_destinations[0:-1]
-
-        # print(selected_destinations)
-
-        # # move to end of file
-        # self.selected_file.seek(0, 2)
-        # # get current position
-        # self.file_size = self.selected_file.tell()
-        # # go back to start of file
-        # self.selected_file.seek(0, 0)
-
-        # pre_info = {'file_size': self.file_size, 'file_name': self.file_name, 'destinations': selected_destinations}
-        # client_socket.send(pickle.dumps(pre_info))
-
-        # sent = 0
-        # while True:
-        #     if self.file_size - sent > 65536:
-        #         buf = self.selected_file.read(65536)
-        #     else:
-        #         buf = self.selected_file.read(self.file_size - sent)
-        #     if buf:
-        #         client_socket.send(buf)
-        #         sent += len(buf)
-        #     else:
-        #         break
-
-        # print("file sent")
+        app.popup_window.dismiss()
 
 
 class CustomLayout(BoxLayout):
@@ -154,7 +199,10 @@ class RoundedButton(Button):
 
 class Application(App):
     clients_list = ClientsList.ClientsRecycleView()
+    clients_list_for_popup = ClientsList.ClientsRecycleView()
     files_list = FilesList.FilesRecycleView()
+    popup_window = Popup()
+    destinations_popup = Popup()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -194,7 +242,7 @@ class Application(App):
         self.send_files_button = RoundedButton(text="Send Files", size_hint=(None, None), size=(120, 50),
                                                pos_hint={'right': 1}, color=get_color_from_hex("#F2F2F2"),
                                                background_color=get_color_from_hex("#1890ff"), font_size=18,
-                                               on_release=self.send_files).build()
+                                               on_release=self.show_destinations_popup).build()
 
         self.name_logo_box.add_widget(self.app_logo)
         self.name_logo_box.add_widget(self.client_list_label)
@@ -217,9 +265,16 @@ class Application(App):
     def show_popup(self):
         show = P().build()
 
-        popup_window = Popup(title="JANELINHA", content=show, size_hint=(None, None), size=(400, 400))
+        self.popup_window = Popup(title="Select a file", content=show, size_hint=(None, None), size=(400, 400))
 
-        popup_window.open()
+        self.popup_window.open()
+
+    def show_destinations_popup(self):
+        show = DestinationsPopup().build()
+
+        self.destinations_popup = Popup(title="Select the destinations", content=show, size_hint=(None, None), size=(400, 400))
+
+        self.destinations_popup.open()
 
     def close_and_quit(self, obj):
         print("exiting...")
@@ -350,6 +405,7 @@ def clients_list():
             continue
 
         app.clients_list.build_client_list(client_socket.getsockname())
+        app.clients_list_for_popup.build_client_list(client_socket.getsockname())
 
 
 _thread.start_new_thread(clients_list, ())
