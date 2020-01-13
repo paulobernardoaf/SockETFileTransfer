@@ -1,3 +1,4 @@
+import os
 from kivy.app import App
 from kivy.lang import Builder
 from kivy.uix.recycleview import RecycleView
@@ -13,16 +14,13 @@ from hurry.filesize import size, alternative
 files = []
 
 Builder.load_string('''
-<FilesLabel>:
+<ReceivedFilesLabel>:
     label1_text: 'label 1 text'
     label2_text: 'label 2 text'
-    label3_text: 'label 3 text'
     file_size: '-1'
     pos: self.pos
     size: self.size
     remove_button: True
-    add_button: False
-    add_func: print('')
 
     canvas.before:
         Color:
@@ -31,7 +29,7 @@ Builder.load_string('''
             pos: self.pos
             size: self.size
         Color:
-            rgba: rgba("#002140") if not root.add_button else (0, 0, 0, 0)
+            rgba: rgba("#002140")
         Line:
             width: 1
             rectangle: self.x + 20, self.y, self.width - 50, 0
@@ -48,7 +46,7 @@ Builder.load_string('''
         color: (0, 0, 0, .9)
         text: root.label1_text
         size_hint_x: None
-        width: 653 if root.remove_button else 1025 if not root.add_button else 850
+        width: 653 if root.remove_button else 1025
         text_size: (580, None)
         halign: 'left' if root.remove_button else 'center'
     BoxLayout:
@@ -82,27 +80,10 @@ Builder.load_string('''
                     size: self.size
                     pos: self.pos
                     radius: [5, 5, 5, 5]
-    Button:
-        text: 'Add File'
-        size_hint: None, None
-        width: 100 if root.add_button else 0
-        height: 40
-        background_color: (0, 0, 0, 0)
-        color: (1, 1, 1, 1) if root.add_button else (0, 0, 0, 0)
-        background_normal: ''
-        on_press: root.add_func()
-        font_size: 16
-        canvas.before:
-            Color:
-                rgba: rgba("#1890ff") if root.add_button else (0, 0, 0, 1)
-            RoundedRectangle:
-                size: self.size
-                pos: self.pos
-                radius: [5, 5, 5, 5]
 
 
-<FilesRecycleView>:
-    viewclass: 'FilesLabel'
+<ReceivedFilesRecycleView>:
+    viewclass: 'ReceivedFilesLabel'
     SelectableRecycleBoxLayout:
         default_size: None, dp(56)
         default_size_hint: 1, None
@@ -120,12 +101,12 @@ class SelectableRecycleBoxLayout(FocusBehavior, LayoutSelectionBehavior,
     ''' Adds selection and focus behaviour to the view. '''
 
 
-class FilesLabel(RecycleDataViewBehavior, GridLayout):
+class ReceivedFilesLabel(RecycleDataViewBehavior, GridLayout):
     ''' Add selection support to the Label '''
     index = None
     selected = BooleanProperty(False)
     selectable = BooleanProperty(False)
-    cols = 5
+    cols = 4
     row_force_default = True
     row_default_height = 50
 
@@ -138,28 +119,28 @@ class FilesLabel(RecycleDataViewBehavior, GridLayout):
         root = App.get_running_app()
         self.add_func = root.show_popup
 
-        return super(FilesLabel, self).refresh_view_attrs(
+        return super(ReceivedFilesLabel, self).refresh_view_attrs(
             rv, index, data)
 
     def removeFile(self, name, file_size):
         global files
         files.remove((name, file_size))
+        if os.path.exists('./received_files/'+name):
+            os.remove('./received_files/'+name)
         root = App.get_running_app()
-        root.files_list.build_files_list()
+        root.received_files_list.build_files_list()
 
 
-class FilesRecycleView(RecycleView):
+class ReceivedFilesRecycleView(RecycleView):
     global files
 
     def build_files_list(self):
         self.data = []
         for x in files:
-            d = {'label2': {'text': x[0]}, 'file_size': x[1], 'button': True, 'add_button': False}
+            d = {'label2': {'text': x[0]}, 'file_size': x[1], 'button': True}
             self.data.append(d)
 
         if len(self.data) == 0:
-            self.data.append({'label2': {'text': 'No file selected'}, 'button': False, 'add_button': False})
-
-        self.data.append({'label2': {'text': ''}, 'button': False, 'add_button': True})
+            self.data.append({'label2': {'text': 'No file received'}, 'button': False})
 
         self.refresh_from_data()

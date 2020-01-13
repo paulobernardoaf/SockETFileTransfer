@@ -26,12 +26,14 @@
         touch_multiselect: True
 
 <BorderBox>:
+    final_x: 50
+    line_width: 1.1
     canvas.before:
         Color:
             rgba: rgba("#002140")
         Line:
-            width: 1.1
-            rectangle: self.x, self.y, self.width - 50, 0
+            width: self.line_width
+            rectangle: self.x, self.y, self.width - self.final_x, 0
 
 <RoundedButton>
     background_color: (0, 0, 0, 0)

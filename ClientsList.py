@@ -37,10 +37,8 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
         ''' Respond to the selection of items in the view. '''
         self.selected = is_selected
         if is_selected:
-            print("selection changed to {0}".format(rv.data[index]))
             self.selected_items.append(rv.data[index])
         else:
-            print("selection removed for {0}".format(rv.data[index]))
             if self.selected_items.__contains__(rv.data[index]):
                 self.selected_items.remove(rv.data[index])
 
@@ -49,11 +47,9 @@ class ClientsRecycleView(RecycleView):
     global clients
 
     def build_client_list(self, sock):
-        print("antes de criar a listbox", clients)
         self.data = []
         for x in clients:
             if x != sock:
                 self.data.append({'text': str(x[0]) + ':' + str(x[1])})
-        # self.data = [{'text': str(x[0]) + ':' + str(x[1])} for x in clients]
+
         self.refresh_from_data()
-        print(self.data)
