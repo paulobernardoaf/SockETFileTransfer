@@ -172,51 +172,6 @@ class P(FloatLayout):
 
             show.open()
 
-class ReceiveConfirmationPopup(FloatLayout):
-
-    selection = ''
-    files_names = []
-    files_sizes = []
-
-    def build(self, files, files_sizes):
-        self.files_names = files
-        self.files_sizes = files_sizes
-
-        self.main_box = BoxLayout(orientation='vertical', spacing=10)
-        self.text_box = BoxLayout(orientation='horizontal', spacing=20)
-        self.button_box = BoxLayout(orientation='horizontal', spacing=20)
-
-        label_text = "Do you want receive " + str(len(files)) + " files?"
-
-        label = Label(text=label_text, size_hint=(None, 1))
-
-        yes_button = Button(text="Yes", background_color=get_color_from_hex("#1890ff"),
-                            background_normal='', color=get_color_from_hex("#F2F2F2"), on_release=lambda x:self.f_yes_button)
-        no_button = Button(text="No", background_color=get_color_from_hex("#ed484c"),
-                            background_normal='', color=get_color_from_hex("#F2F2F2"), on_release=lambda x:self.f_no_button)
-
-        self.text_box.add_widget(label)
-        self.button_box.add_widget(yes_button)
-        self.button_box.add_widget(no_button)
-
-        self.main_box.add_widget(self.text_box)
-        self.main_box.add_widget(self.button_box)
-
-        return self.main_box
-
-    def f_yes_button(self, obj):
-        print("to printaksdlnkas")
-        self.selection = 'yes'
-        app.receive_popup.dismiss()
-        
-    
-    def f_no_button(self, obj):
-        self.selection = 'no'
-        app.receive_popup.dismiss()
-    
-    def reset_selection(self):
-        self.selection = ''
-
 class CustomLayout(BoxLayout):
 
     def __init__(self, **kwargs):
@@ -312,11 +267,6 @@ class Application(App):
         self.right_box = BoxLayout(orientation='vertical', spacing=10, padding=(20, -15, 10, 20))
         self.build_right_box()
         self.box.add_widget(self.right_box)
-
-    def show_confirmation_popup(self, response):
-        self.receive_popup.content = ReceiveConfirmationPopup().build(response['files_names'], response['files_sizes'])
-        self.receive_popup.open()
-        self.receive_popup.bind(on_dismiss=waiting_for_answer)
 
     def build_right_box(self):
         self.title_box = BoxLayout(orientation='horizontal', spacing=50, size_hint=(1, None),
@@ -435,7 +385,6 @@ class Application(App):
         self.destinations_popup = Popup(title=title, title_size=18, title_align='center', content=show,
                                         size_hint=(None, None), size=size, separator_color=get_color_from_hex("#1890ff"),
                                         background='resources/background.jpg')
-
         self.destinations_popup.open()
 
     def close_and_quit(self, obj):
@@ -482,37 +431,20 @@ def handle_files(sock, files_sizes, files_names, quantity):
     return
 
 
-def waiting_for_answer(obj):
-    global flag
-    if ReceiveConfirmationPopup.selection == 'yes':
-        print("ies")
-        # handle_files(client_socket, response['files_sizes'], response['files_names'], len(response['files_sizes']))
-    else:
-        print("no")
-        # handle_files(client_socket, response['files_sizes'], response['files_names'], len(response['files_sizes']))
-
-    ReceiveConfirmationPopup().reset_selection()
-    flag = 0
-
-
 def clients_list():
     global flag
     while True:
         try:
-            response = ''
-            if flag == 0:
-                response = client_socket.recv(2048)
+            response = client_socket.recv(2048)
 
-                response = pickle.loads(response)
+            response = pickle.loads(response)
 
             if 'clients' in response:
                 ClientsList.clients = response['clients']
                 ClientsListUnselectable.clients = response['clients']
 
             if 'files_sizes' in response:
-                flag = 1
-                app.show_confirmation_popup(response)
-
+                handle_files(client_socket, response['files_sizes'], response['files_names'], len(response['files_sizes']))
 
         except ConnectionAbortedError:
             client_socket.close()

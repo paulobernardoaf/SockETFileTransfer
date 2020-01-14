@@ -32,7 +32,7 @@
         Color:
             rgba: rgba("#002140")
         Line:
-            width: self.line_width
+            width: self.line_width if self.line_width > 0 else 1
             rectangle: self.x, self.y, self.width - self.final_x, 0
 
 <RoundedButton>
