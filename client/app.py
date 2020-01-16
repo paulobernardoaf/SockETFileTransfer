@@ -27,7 +27,7 @@ from kivy.uix.label import Label
 from kivy.uix.filechooser import FileChooserIconView
 from kivy.uix.popup import Popup
 from hurry.filesize import size, alternative
-from layoutComponents import BorderBox, CustomLayout, RoundedButton
+from layoutComponents import BorderBox, CustomLayout, RoundedButton, CustomTextInput
 from layoutComponents import ClientsListUnselectable, ClientsList, FilesList, ReceivedFilesList
 
 from kivy.uix.screenmanager import ScreenManager, Screen
@@ -66,13 +66,13 @@ class DestinationsPopup(FloatLayout):
         return self.main_box
 
     def popup_dismiss(self, instance):
-        time.sleep(3)
+        time.sleep(2)
         instance.dismiss()
 
     def send_files(self, obj):
         selected_destinations = ""
         for x in self.destinations_list.viewclass.selected_items:
-            selected_destinations += x['text'] + ";"
+            selected_destinations += x['text'].split(" - (")[1].replace(')', '') + ";"
         selected_destinations = selected_destinations[0:-1]
 
         if len(selected_destinations) == 0:
@@ -172,26 +172,6 @@ class P(FloatLayout):
             show.open()
 
 
-class LoginPopup(BoxLayout):
-
-    def build(self):
-        self.main_box = BoxLayout(orientation='vertical', spacing=10)
-        self.label_text = Label(text="Insert your username:")
-        self.text_input = TextInput(text='', multiline=False, focus=True)
-        self.set_username_button = Button(text="Login", on_press=self.apply_username, size_hint=(1, .1),
-                                          color=get_color_from_hex("#F2F2F2"),
-                                          background_color=get_color_from_hex("#002140"),
-                                          background_normal='')
-        self.main_box.add_widget(self.label_text)
-        self.main_box.add_widget(self.text_input)
-        self.main_box.add_widget(self.set_username_button)
-        return self.main_box
-
-    def apply_username(self, obj):
-        print(self.text_input.text)
-        app.login_popup.dismiss()
-
-
 class Main_GUI(Screen):
 
     def build(self, content):
@@ -213,6 +193,9 @@ class Application(App):
     destinations_popup = Popup()
     login_popup = Popup()
     error_popup = Popup()
+    username = ''
+    title = 'SockETFileTransfer'
+    icon = 'resources/icon.png'
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -223,11 +206,6 @@ class Application(App):
         self.received_files_list = ReceivedFilesList.ReceivedFilesRecycleView()
         self.received_files_list.build_files_list()
         self.right_page = 'selected_files'
-        if not os.path.isdir("received_files"):
-            os.mkdir("received_files")
-        path = os.path.join("received_files", str(self.sockName[0]) + '_' + str(self.sockName[1]))
-        if not os.path.isdir(path):
-            os.mkdir(path)
 
         if len(self.files_list.data) == 0:
             self.files_list.data.append({'label2': {'text': 'No file selected'}, 'button': False, 'add_button': False})
@@ -236,7 +214,7 @@ class Application(App):
     def select_right_page(self, instance, value):
         if value == 'received_files':
             ReceivedFilesList.files = []
-            path = os.path.join("received_files", self.sockName[0] + "_" + str(self.sockName[1]))
+            path = os.path.join("received_files", self.login_text_input.text)
             for subdir, dirs, files in os.walk(path):
                 for file in files:
                     file_path = os.path.join(path, file)
@@ -270,7 +248,7 @@ class Application(App):
                                                                  pos_hint={'right': .96},
                                                                  color=get_color_from_hex("#F2F2F2"),
                                                                  background_color=get_color_from_hex("#1890ff"),
-                                                                 font_size=18,
+                                                                 font_size=18, border_radius=[5,5,5,5],
                                                                  on_release=self.show_destinations_popup).build()
 
             self.connected_clients_label_box = BorderBox.BorderBox(orientation='horizontal', size_hint=(1, .1),
@@ -325,7 +303,7 @@ class Application(App):
 
         self.app_logo = Image(source='resources/logo.png', size_hint=(None, None), size=(100, 100))
 
-        self.client_list_label = Label(text="[color=#F2F2F2]Files[b]Transfer[/b][/color]", font_size="25sp",
+        self.client_list_label = Label(text="[color=#F2F2F2]File[b]Transfer[/b][/color]", font_size="25sp",
                                        size_hint=(1, None), height=90, markup=True)
 
         self.quit_button = Button(text="Quit", on_press=self.close_and_quit, size_hint=(1, .1),
@@ -352,30 +330,37 @@ class Application(App):
         main_gui = Main_GUI(name="main")
         main_gui.build(self.box)
 
-        self.login_box = BoxLayout(orientation='vertical', spacing=10)
+        self.login_box = CustomLayout.CustomLayout(orientation='vertical', spacing=50, padding=(0,0,0,180))
+        self.login_items_box = BoxLayout(orientation='vertical', spacing=10, size_hint=(1,.3))
 
-        self.login_logo_box = BoxLayout(orientation="horizontal", spacing=10)
+        self.login_logo_box = BoxLayout(orientation="horizontal", spacing=0, size_hint=(1,None))
+        self.login_app_logo_box = BoxLayout(size_hint=(.55, None), padding=(450,0,0,0))
 
-        self.login_app_logo = Image(source='resources/logo.png', size_hint=(None, None), size=(150, 150))
+        self.login_app_logo = Image(source='resources/logo.png', size_hint=(None, None), height=150)
 
-        self.login_app_logo_label = Label(text="[color=#F2F2F2]Files[b]Transfer[/b][/color]", font_size="25sp",
-                                          size_hint=(1, None), height=90, markup=True)
+        self.login_app_logo_label = Label(text="[color=#F2F2F2]File[b]Transfer[/b][/color]", font_size="40sp",
+                                          size_hint=(1, None), text_size=(640,150), valign='middle', markup=True)
 
-        self.login_logo_box.add_widget(self.login_app_logo)
+        self.login_app_logo_box.add_widget(self.login_app_logo)
+        self.login_logo_box.add_widget(self.login_app_logo_box)
         self.login_logo_box.add_widget(self.login_app_logo_label)
 
-        self.login_welcome = Label(text="Welcome, please insert an username (max of 14 characters long)", font_size="25sp",
-                                   size_hint=(1, None), height=90, markup=True)
+        self.login_welcome = Label(text="Welcome", font_size="28sp",
+                                   size_hint=(1, None), markup=True)
 
-        self.login_text_input = TextInput(text="A", multiline=False, unfocus_on_touch=False)
+        self.login_text_input = CustomTextInput.CustomTextInput(on_text_validate=self.login, size=(500,50),
+                                                                background_color=get_color_from_hex("#F2F2F2"),
+                                                                hint_text="Please insert an username (max of 14 characters long)",
+                                                                font_size='18dp')
 
-        self.login_button = Button(text="Login", on_press=self.login, size_hint=(1, .1),
-                                   color=get_color_from_hex("#F2F2F2"), background_color=get_color_from_hex("#002140"),
-                                   background_normal='')
+        self.login_button = RoundedButton.RoundedButton(text="Login", size=(300,60), font_size=18, on_release=self.login,
+                                                        color=get_color_from_hex("#F2F2F2"), border_radius=[30,30,30,30],
+                                                        background_color=get_color_from_hex("#1890ff"))
 
-        self.login_box.add_widget(self.login_logo_box)
-        self.login_box.add_widget(self.login_welcome)
-        self.login_box.add_widget(self.login_text_input)
+        self.login_items_box.add_widget(self.login_logo_box)
+        self.login_items_box.add_widget(self.login_welcome)
+        self.login_items_box.add_widget(self.login_text_input)
+        self.login_box.add_widget(self.login_items_box)
         self.login_box.add_widget(self.login_button)
 
         login_gui = Login_GUI(name="login")
@@ -389,11 +374,11 @@ class Application(App):
     def close_error_popup(self, obj):
         self.error_popup.dismiss()
 
-    def login(self, obj):
+    def login(self):
 
-        long_username_error = Label(text="Username exceed the 14 characters limit.", font_size="25sp",
+        long_username_error = Label(text="Username exceed the 14 characters limit.", font_size="16sp",
                                     size_hint=(1, None), height=90, markup=True)
-        short_username_error = Label(text="Username can't be blank.", font_size="25sp",
+        short_username_error = Label(text="Username can't be blank.", font_size="16sp",
                                      size_hint=(1, None), height=90, markup=True)
 
         close_button = Button(text="Ok", on_press=self.close_error_popup, size_hint=(1, .1),
@@ -409,7 +394,7 @@ class Application(App):
         if len(self.login_text_input.text) == 0:
             short_box.add_widget(close_button)
             self.error_popup = Popup(title="Error", title_size=18, title_align='center', content=short_box,
-                                     size_hint=(None, None), size=(600, 400),
+                                     size_hint=(None, None), size=(350, 200),
                                      separator_color=get_color_from_hex("#1890ff"),
                                      background='resources/background.jpg', auto_dismiss=False)
             self.error_popup.open()
@@ -419,7 +404,7 @@ class Application(App):
             long_box.add_widget(close_button)
             self.error_popup = Popup(title="Error", title_size=18, title_align='center',
                                      content=long_box,
-                                     size_hint=(None, None), size=(600, 400),
+                                     size_hint=(None, None), size=(350, 200),
                                      separator_color=get_color_from_hex("#1890ff"),
                                      background='resources/background.jpg', auto_dismiss=False)
             self.error_popup.open()
@@ -474,10 +459,21 @@ def percentage(part, whole):
 
 
 def handle_files(sock, files_sizes, files_names, quantity):
+
+    if not os.path.isdir("received_files"):
+        os.mkdir("received_files")
+    path = os.path.join("received_files", app.login_text_input.text)
+
+    if not os.path.isdir(path):
+        os.mkdir(path)
+
     for i in range(quantity):
         data = bytearray()
-        path = os.path.join("received_files", app.sockName[0] + '_' + str(app.sockName[1]), files_names[i])
+        path = os.path.join("received_files", app.login_text_input.text, files_names[i])
         received = 0
+        if os.path.isfile(path):
+            os.remove(path)
+
         with open(path, 'ab+') as f:
             while received < files_sizes[i]:
                 if files_sizes[i] - received >= 65536:

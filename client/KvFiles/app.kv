@@ -41,10 +41,46 @@
     back_color: (0, 0, 0, 1)
     on_press: self.back_color = rgba("#1265b3")
     on_release: self.back_color = rgba("#1890ff")
+    border_radius: [5,5,5,5]
     canvas.before:
         Color:
             rgba: self.back_color
         RoundedRectangle:
             size: self.size
             pos: self.pos
-            radius: [5, 5, 5, 5]
+            radius: self.border_radius or [5,5,5,5]
+
+
+<CustomTextInput@TextInput>:
+    font_size: '14dp'
+    background_color: 0,0,0,0
+    cursor_color: rgba('#000000')
+    background_normal: ''
+    background_active: ''
+    padding_y: [self.height / 2.0 - (self.line_height / 2.0) * len(self._lines), 0]
+    canvas.before:
+        Color:
+            rgba: rgba('#333333')
+    canvas.after:
+        Color:
+            rgb: rgba('#F2F2F2')
+        Ellipse:
+            angle_start:180
+            angle_end:360
+            pos:(self.pos[0] - self.size[1]/2.0, self.pos[1])
+            size: (self.size[1], self.size[1])
+        Ellipse:
+            angle_start:360
+            angle_end:540
+            pos: (self.size[0] + self.pos[0] - self.size[1]/2.0, self.pos[1])
+            size: (self.size[1], self.size[1])
+        Color:
+            rgba: rgba('#3f92db')
+        Line:
+            points: self.pos[0] , self.pos[1], self.pos[0] + self.size[0], self.pos[1]
+        Line:
+            points: self.pos[0], self.pos[1] + self.size[1], self.pos[0] + self.size[0], self.pos[1] + self.size[1]
+        Line:
+            ellipse: self.pos[0] - self.size[1]/2.0, self.pos[1], self.size[1], self.size[1], 180, 360
+        Line:
+            ellipse: self.size[0] + self.pos[0] - self.size[1]/2.0, self.pos[1], self.size[1], self.size[1], 360, 540

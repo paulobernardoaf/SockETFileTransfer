@@ -41,7 +41,7 @@ class ReceivedFilesLabel(RecycleDataViewBehavior, GridLayout):
         global files
         files.remove((name, file_size))
         root = App.get_running_app()
-        path = os.path.join("received_files", root.sockName[0] + '_' + str(root.sockName[1]), name)
+        path = os.path.join("received_files", root.login_text_input.text, name)
         if os.path.exists(path):
             os.remove(path)
         root.received_files_list.build_files_list()

@@ -42,10 +42,9 @@ class ClientsRecycleView(RecycleView):
     global clients
 
     def build_client_list(self, sock):
-        print("building: ", clients)
         self.data = []
         for x in clients:
-            if x != sock:
+            if x[0] != sock:
                 self.data.append({'text': str(x[1]) + " - (" + x[0][0] + ":" + str(x[0][1]) + ')'})
 
         self.refresh_from_data()
