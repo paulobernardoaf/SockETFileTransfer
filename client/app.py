@@ -184,6 +184,8 @@ class Application(App):
         self.received_files_list = ReceivedFilesList.ReceivedFilesRecycleView()
         self.received_files_list.build_files_list()
         self.right_page = 'selected_files'
+        if not os.path.isdir("received_files"):
+            os.mkdir("received_files")
         path = os.path.join("received_files", str(self.sockName[0]) + '_' + str(self.sockName[1]))
         if not os.path.isdir(path):
             os.mkdir(path)
