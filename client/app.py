@@ -7,12 +7,11 @@ import time
 from kivy.config import Config
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.image import Image
-from kivy.uix.widget import Widget
 
 Config.set('graphics', 'resizable', False)
 Config.set('graphics', 'width', '1280')
 Config.set('graphics', 'height', '720')
-Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
+Config.set('input', 'mouse', 'mouse, multitouch_on_demand')
 
 from kivy.core.window import Window
 from kivy.utils import get_color_from_hex
@@ -22,45 +21,37 @@ Window.clearcolor = get_color_from_hex("#F2F2F2")
 from kivy.app import App
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.gridlayout import GridLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
-from kivy.graphics import Color, Rectangle
-from kivy.uix.filechooser import FileChooserListView
 from kivy.uix.filechooser import FileChooserIconView
 from kivy.uix.popup import Popup
-from kivy.uix.filechooser import FileSystemAbstract
 from hurry.filesize import size, alternative
-import ClientsList
-import ClientsListUnselectable
-import FilesList
-import ReceivedFilesList
-
+from layoutComponents import BorderBox, CustomLayout, RoundedButton
+from layoutComponents import ClientsListUnselectable, ClientsList, FilesList, ReceivedFilesList
 
 address = ("localhost", 20000)
 
-# Create sockets
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect(address)
 
-Builder.load_file("kvFile.kv")
+Builder.load_file("./KvFiles/app.kv")
 
-flag = 0
 
 class DestinationsPopup(FloatLayout):
     destinations_list = ClientsList.ClientsRecycleView()
 
     def build(self):
-        self.main_box = BoxLayout(orientation='vertical', spacing=10, padding=(0,10,0,0))
+        self.main_box = BoxLayout(orientation='vertical', spacing=10, padding=(0, 10, 0, 0))
         self.destinations_list = ClientsList.ClientsRecycleView()
-        self.destinations_list.build_client_list(client_socket.getsockname())
+        self.destinations_list.build_client_list(app.sockName)
 
         self.send_button = Button(text="Send Files", size_hint=(1, None), height=50,
-                                               color=get_color_from_hex("#F2F2F2"), background_normal='',
-                                               background_color=get_color_from_hex("#1890ff"), font_size=18,
-                                               on_release=self.send_files)
+                                  color=get_color_from_hex("#F2F2F2"), background_normal='',
+                                  background_color=get_color_from_hex("#1890ff"), font_size=18,
+                                  on_press=self.send_files)
 
-        self.no_clients_label = Label(text="No clients connected", font_size=16, size_hint=(1, None), pos_hint={'top': 1})
+        self.no_clients_label = Label(text="No clients connected", font_size=16, size_hint=(1, None),
+                                      pos_hint={'top': 1})
 
         if len(self.destinations_list.data) == 0:
             self.main_box.add_widget(self.no_clients_label)
@@ -68,6 +59,10 @@ class DestinationsPopup(FloatLayout):
         self.main_box.add_widget(self.destinations_list)
         self.main_box.add_widget(self.send_button)
         return self.main_box
+
+    def popup_dismiss(self, instance):
+        time.sleep(3)
+        instance.dismiss()
 
     def send_files(self, obj):
         selected_destinations = ""
@@ -77,9 +72,9 @@ class DestinationsPopup(FloatLayout):
 
         if len(selected_destinations) == 0:
             show = Popup(title="Error", title_size=18, title_align='center',
-                        content=Label(text="Select at least 1 destination", font_size=16),
-                        size_hint=(None, None), size=(250, 150), separator_color=get_color_from_hex("#1890ff"),
-                        background='resources/background.jpg')
+                         content=Label(text="Select at least 1 destination", font_size=16),
+                         size_hint=(None, None), size=(250, 150), separator_color=get_color_from_hex("#1890ff"),
+                         background='resources/background.jpg')
 
             show.open()
             return
@@ -92,11 +87,8 @@ class DestinationsPopup(FloatLayout):
 
             name = os.path.basename(os.path.normpath(file_path))
 
-            # move to end of file
             file.seek(0, 2)
-            # get current position
             size = file.tell()
-            # go back to start of file
             file.seek(0, 0)
 
             files_sizes.append(size)
@@ -111,13 +103,8 @@ class DestinationsPopup(FloatLayout):
             file_path = file_info[0]
             selected_file = open(file_path, 'rb')
 
-            file_name = os.path.basename(os.path.normpath(file_path))
-
-            # move to end of file
             selected_file.seek(0, 2)
-            # get current position
             file_size = selected_file.tell()
-            # go back to start of file
             selected_file.seek(0, 0)
 
             sent = 0
@@ -134,6 +121,13 @@ class DestinationsPopup(FloatLayout):
 
         app.destinations_popup.dismiss()
 
+        file_sent_popup = Popup(title='Uploaded File(s)', title_size=16, title_align='center', size_hint=(None, None),
+                                size=(600, 50), pos_hint={'center_x': .5, 'center_y': .04},
+                                separator_color=(0, 0, 0, .8), background='resources/background2.jpg',
+                                on_open=self.popup_dismiss)
+
+        file_sent_popup.open()
+
 
 class P(FloatLayout):
 
@@ -146,7 +140,7 @@ class P(FloatLayout):
         filechooser.bind(on_selection=lambda x: self.selected(filechooser.selection))
 
         open_btn = Button(text='Open', size_hint=(1, .2), background_color=get_color_from_hex("#1890ff"),
-                            background_normal='', color=get_color_from_hex("#F2F2F2"))
+                          background_normal='', color=get_color_from_hex("#F2F2F2"))
         open_btn.bind(on_release=lambda x: self.open(filechooser.selection))
 
         self.main_box.add_widget(filechooser)
@@ -166,60 +160,11 @@ class P(FloatLayout):
             app.popup_window.dismiss()
         else:
             show = Popup(title="Error", title_size=18, title_align='center',
-                        content=Label(text="Select a File", font_size=16),
-                        size_hint=(None, None), size=(250, 150), separator_color=get_color_from_hex("#1890ff"),
-                        background='resources/background.jpg')
+                         content=Label(text="Select a File", font_size=16),
+                         size_hint=(None, None), size=(250, 150), separator_color=get_color_from_hex("#1890ff"),
+                         background='resources/background.jpg')
 
             show.open()
-
-class CustomLayout(BoxLayout):
-
-    def __init__(self, **kwargs):
-        # make sure we aren't overriding any important functionality
-        super(CustomLayout, self).__init__(**kwargs)
-
-        with self.canvas.before:
-            Color(0, 0.08, 0.16, 1)  # colors range from 0-1 instead of 0-255
-            self.rect = Rectangle(size=self.size, pos=self.pos)
-
-        self.bind(size=self._update_rect, pos=self._update_rect)
-
-    def _update_rect(self, instance, value):
-        self.rect.pos = instance.pos
-        self.rect.size = instance.size
-
-
-class BorderBox(BoxLayout):
-
-    def __init__(self, orientation='', spacing=0, size_hint=(None, None), padding=(0, 0, 0, 0), final_x=50, line_width=1):
-        super().__init__()
-        self.orientation = orientation
-        self.spacing     = spacing
-        self.size_hint   = size_hint
-        self.padding     = padding
-        self.final_x     = final_x
-        self.line_width  = line_width
-
-    def build(self):
-        return self
-
-
-class RoundedButton(Button):
-
-    def __init__(self, text="", on_release=None, size_hint=(None, None), size=(None, None), pos_hint={'center_x': .5},
-                 color=(1, 1, 1, 1), background_color=(0, 0, 0, 1), font_size=12):
-        super().__init__()
-        self.text = text
-        self.on_release = on_release
-        self.size_hint = size_hint
-        self.size = size
-        self.pos_hint = pos_hint
-        self.color = color
-        self.back_color = background_color
-        self.font_size = font_size
-
-    def build(self):
-        return self
 
 
 class Application(App):
@@ -229,19 +174,19 @@ class Application(App):
     received_files_list = ReceivedFilesList.ReceivedFilesRecycleView()
     popup_window = Popup()
     destinations_popup = Popup()
-    receive_popup = Popup(title="Incoming Files:", title_size=18, title_align='center',
-                        content=Label(text="", font_size=16),
-                        size_hint=(None, None), size=(250, 150), separator_color=get_color_from_hex("#1890ff"),
-                        background='resources/background.jpg')
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.clients_list_unselectable = ClientsListUnselectable.UnClientsRecycleView()
-        self.clients_list_unselectable.build_client_list(client_socket.getsockname())
-        self.files_list   = FilesList.FilesRecycleView()
+        self.sockName = client_socket.getsockname()
+        self.clients_list_unselectable.build_client_list(self.sockName)
+        self.files_list = FilesList.FilesRecycleView()
         self.received_files_list = ReceivedFilesList.ReceivedFilesRecycleView()
         self.received_files_list.build_files_list()
         self.right_page = 'selected_files'
+        path = os.path.join("received_files", str(self.sockName[0]) + '_' + str(self.sockName[1]))
+        if not os.path.isdir(path):
+            os.mkdir(path)
 
         if len(self.files_list.data) == 0:
             self.files_list.data.append({'label2': {'text': 'No file selected'}, 'button': False, 'add_button': False})
@@ -250,10 +195,11 @@ class Application(App):
     def select_right_page(self, instance, value):
         if value == 'received_files':
             ReceivedFilesList.files = []
-            for subdir, dirs, files in os.walk('./received_files'):
+            path = os.path.join("received_files", self.sockName[0] + "_" + str(self.sockName[1]))
+            for subdir, dirs, files in os.walk(path):
                 for file in files:
-                    print(file)
-                    with open('./received_files/'+file) as fn:
+                    file_path = os.path.join(path, file)
+                    with open(file_path) as fn:
                         fn.seek(0, 2)
                         file_size = size(int(fn.tell()), system=alternative)
                         fn.seek(0, 0)
@@ -273,42 +219,42 @@ class Application(App):
                                    padding=(77, 0, 0, 0))
 
         if self.right_page == 'selected_files':
-            first_title  = 'Selected files'
-            first_ref    = 'selected_files'
+            first_title = 'Selected files'
+            first_ref = 'selected_files'
             second_title = 'Received Files'
-            second_ref  = 'received_files'
+            second_ref = 'received_files'
 
-            self.send_files_button = RoundedButton(text="Select destinations", size_hint=(None, None), size=(170, 50),
-                                               pos_hint={'right': .96}, color=get_color_from_hex("#F2F2F2"),
-                                               background_color=get_color_from_hex("#1890ff"), font_size=18,
-                                               on_release=self.show_destinations_popup).build()
+            self.send_files_button = RoundedButton.RoundedButton(text="Select destinations", size_hint=(None, None), size=(170, 50),
+                                                   pos_hint={'right': .96}, color=get_color_from_hex("#F2F2F2"),
+                                                   background_color=get_color_from_hex("#1890ff"), font_size=18,
+                                                   on_release=self.show_destinations_popup).build()
 
-            self.connected_clients_label_box = BorderBox(orientation='horizontal', size_hint=(1, .1),
-                                    padding=(20, 5, 5, 10), final_x=5, line_width=1.3).build()
+            self.connected_clients_label_box = BorderBox.BorderBox(orientation='horizontal', size_hint=(1, .1),
+                                                         padding=(20, 5, 5, 10), final_x=5, line_width=1.3).build()
 
         else:
-            first_title  = 'Received files'
-            first_ref    = 'received_files'
+            first_title = 'Received files'
+            first_ref = 'received_files'
             second_title = 'Selected Files'
-            second_ref  = 'selected_files'
-                       
-        self.files_list_label = Label(text="[u][b]" + first_title + "[/b][/u]",font_size=42, size_hint=(None, None),
-                                    height=50, color=(0, 33/255, 64/255/ 1), markup=True)
-        self.received_list_label = Label(text="[ref="+ second_ref +"]"+ second_title +"[/ref]", font_size=42, size_hint=(None, None),
-                                    width=1200, height=50, color=(0, 33/255, 64/255, .5), markup=True)
+            second_ref = 'selected_files'
+
+        self.files_list_label = Label(text="[u][b]" + first_title + "[/b][/u]", font_size=42, size_hint=(None, None),
+                                      height=50, color=(0, 33 / 255, 64 / 255 / 1), markup=True)
+        self.received_list_label = Label(text="[ref=" + second_ref + "]" + second_title + "[/ref]", font_size=42,
+                                         size_hint=(None, None),
+                                         width=1200, height=50, color=(0, 33 / 255, 64 / 255, .5), markup=True)
         self.received_list_label.bind(on_ref_press=self.select_right_page)
 
-        self.header_box = BorderBox(orientation="horizontal", spacing=0, size_hint=(1, None),
+        self.header_box = BorderBox.BorderBox(orientation="horizontal", spacing=0, size_hint=(1, None),
                                     padding=(15, 0, 0, 0)).build()
         self.header_box.height = 30
 
         self.file_name_label = Label(text="Name", font_size=18, size_hint=(None, None), width=662,
-                                     height=30, text_size=(662,None), halign='left', color=(0, 0, 0, .75))
+                                     height=30, text_size=(662, None), halign='left', color=(0, 0, 0, .75))
         self.file_size_label = Label(text="Size", font_size=18, size_hint=(None, None), width=170,
-                                     height=30, text_size=(100,None), halign='left', color=(0, 0, 0, .75))
-        self.action_label    = Label(text="Action", font_size=18, size_hint=(None, None), width=100,
-                                     height=30, text_size=(100,None), halign='center', color=(0, 0, 0, .75))
-
+                                     height=30, text_size=(100, None), halign='left', color=(0, 0, 0, .75))
+        self.action_label = Label(text="Action", font_size=18, size_hint=(None, None), width=100,
+                                  height=30, text_size=(100, None), halign='center', color=(0, 0, 0, .75))
 
         self.title_box.add_widget(self.files_list_label)
         self.title_box.add_widget(self.received_list_label)
@@ -326,13 +272,11 @@ class Application(App):
         else:
             self.right_box.add_widget(self.received_files_list)
 
-
     def build(self):
         self.box = BoxLayout(orientation='horizontal', spacing=0)
-        self.left_box = CustomLayout(orientation='vertical', spacing=10, size_hint_x=None, width=250)
+        self.left_box = CustomLayout.CustomLayout(orientation='vertical', spacing=10, size_hint_x=None, width=250)
         self.right_box = BoxLayout(orientation='vertical', spacing=10, padding=(20, -15, 10, 20))
         self.name_logo_box = BoxLayout(orientation='horizontal', spacing=60, size_hint=(None, None), height=110)
-
 
         self.app_logo = Image(source='resources/logo.png', size_hint=(None, None), size=(100, 100))
 
@@ -344,8 +288,8 @@ class Application(App):
                                   background_normal='')
 
         self.connected_clients_label = Label(text="Connected clients:", font_size="18sp",
-                                       size_hint=(1, None), text_size=(250,30), height=30, markup=True, halign='left')
-
+                                             size_hint=(1, None), text_size=(250, 30), height=30, markup=True,
+                                             halign='left')
 
         self.build_right_box()
 
@@ -366,8 +310,9 @@ class Application(App):
         show = P().build()
 
         self.popup_window = Popup(title="Select a file", title_size=18, title_align='center', content=show,
-                                size_hint=(None, None), size=(600, 400), separator_color=get_color_from_hex("#1890ff"),
-                                background='resources/background.jpg')
+                                  size_hint=(None, None), size=(600, 400),
+                                  separator_color=get_color_from_hex("#1890ff"),
+                                  background='resources/background.jpg')
 
         self.popup_window.open()
 
@@ -380,10 +325,11 @@ class Application(App):
         else:
             show = Label(text="You need to have at least 1 file")
             title = "Error"
-            size = (250,150)
+            size = (250, 150)
 
         self.destinations_popup = Popup(title=title, title_size=18, title_align='center', content=show,
-                                        size_hint=(None, None), size=size, separator_color=get_color_from_hex("#1890ff"),
+                                        size_hint=(None, None), size=size,
+                                        separator_color=get_color_from_hex("#1890ff"),
                                         background='resources/background.jpg')
         self.destinations_popup.open()
 
@@ -395,7 +341,6 @@ class Application(App):
         Window.close()
 
 
-
 app = Application()
 
 
@@ -405,12 +350,10 @@ def percentage(part, whole):
 
 def handle_files(sock, files_sizes, files_names, quantity):
     for i in range(quantity):
-        st = time.time()
         data = bytearray()
-        dest = 'received_files/{}'.format(files_names[i])
+        path = os.path.join("received_files", app.sockName[0] + '_' + str(app.sockName[1]), files_names[i])
         received = 0
-        # print("Need to receive: ", files_sizes[i], " bytes")
-        with open(dest, 'ab+') as f:
+        with open(path, 'ab+') as f:
             while received < files_sizes[i]:
                 if files_sizes[i] - received >= 65536:
                     packet = sock.recv(65536)
@@ -420,14 +363,9 @@ def handle_files(sock, files_sizes, files_names, quantity):
                     return None
                 pack_received = len(packet)
                 received += pack_received
-                # print("received =>", pack_received)
                 data.extend(packet)
                 f.write(data)
                 data = bytearray()
-                # if time.time() - st >= 1:  # opcional, informacao sobre o total ja carregado
-                    # print('bytes downloaded:', percentage(received, files_sizes[i]))
-                #     st = time.time()
-        # print('success on receiving and saving {} with {} bytes'.format(files_names[i], received))
     return
 
 
@@ -444,7 +382,8 @@ def clients_list():
                 ClientsListUnselectable.clients = response['clients']
 
             if 'files_sizes' in response:
-                handle_files(client_socket, response['files_sizes'], response['files_names'], len(response['files_sizes']))
+                handle_files(client_socket, response['files_sizes'], response['files_names'],
+                             len(response['files_sizes']))
 
         except ConnectionAbortedError:
             client_socket.close()
@@ -452,8 +391,8 @@ def clients_list():
         except EOFError:
             continue
 
-        app.clients_list_unselectable.build_client_list(client_socket.getsockname())
-        app.clients_list_for_popup.build_client_list(client_socket.getsockname())
+        app.clients_list_unselectable.build_client_list(app.sockName)
+        app.clients_list_for_popup.build_client_list(app.sockName)
 
 
 _thread.start_new_thread(clients_list, ())

@@ -1,0 +1,24 @@
+<UnSelectableLabel>:
+    # Draw a background to indicate selection
+    canvas.before:
+        Color:
+            rgba: rgba("#1890ff") if self.selected else rgba("#001529")
+        Rectangle:
+            pos: self.pos
+            size: self.size
+        Color:
+            rgba: rgba("#002140")
+        Line:
+            width: 1
+            rectangle: self.x + 20, self.y, self.width - 50, 0
+
+<UnClientsRecycleView>:
+    viewclass: 'UnSelectableLabel'
+    UnSelectableRecycleBoxLayout:
+        default_size: None, dp(56)
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: 'vertical'
+        multiselect: True
+        touch_multiselect: True
