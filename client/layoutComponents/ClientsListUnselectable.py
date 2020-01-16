@@ -34,5 +34,5 @@ class UnClientsRecycleView(RecycleView):
 
     def build_client_list(self, sock):
         self.data = []
-        self.data = [{'text': str(x[0]) + ':' + str(x[1])} for x in clients]
+        self.data = [{'text': str(x[1]) + " - (" + x[0][0] + ":" + str(x[0][1]) + ')'} for x in clients]
         self.refresh_from_data()
