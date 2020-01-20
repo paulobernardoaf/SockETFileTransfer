@@ -17,7 +17,8 @@ Version 3.5 to 3.7 (3.8 is incompatible with Kivy 1.11.0)
 ## Python packages
 Remember to use pip3 on all commands.
 
-- Kivy - 1.11.0 ( How to install Kivy )
+- Kivy - 1.11.0 ( [Download Kivy](https://kivy.org/#download) )
+  + Kivy is a python library for implementing GUI applications.
 - hurry - 0.9 ( pip3 install hurry.filesize )
 
 # Running
